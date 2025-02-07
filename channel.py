@@ -75,9 +75,30 @@ CHANNELS = [
 
 MAX_MESSAGES = 150  # Limit to 150 messages
 
+# filter out inappropriate messages
+def filter_message(message):
+    unwanted_words = ['spam', 'advertisement']
+    for word in unwanted_words:
+        if word in message['content'].lower():
+            return False
+    return True
+
+"""
+# Function to generate responses
+def generate_response(message):
+    if 'help' in message['content'].lower():
+        return {
+            'content': 'How can I assist you with your studies?',
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'extra': None
+        }
+    return None
+    """
+
 @app.cli.command('register')
 def register_command():
-    global CHANNEL_AUTHKEY, CHANNELS
+    global HUB_URL, HUB_AUTHKEY, CHANNELS
 
     for channel in CHANNELS:
         # send a POST request to server /channels
@@ -100,16 +121,15 @@ def get_channel_config(name):
             return channel
     return None
 
-def check_authorization(request):
-    global CHANNEL_AUTHKEY
+def check_authorization(request, authkey):
     # check if Authorization header is present
     if 'Authorization' not in request.headers:
         return False
     # check if authorization header is valid
-    if request.headers['Authorization'] != 'authkey ' + CHANNEL_AUTHKEY:
+    if request.headers['Authorization'] != 'authkey ' + authkey:
         return False
     return True
-
+    
 @app.route('/<channel_name>/health', methods=['GET'])
 def health_check(channel_name):
     channel = get_channel_config(channel_name)
@@ -130,11 +150,14 @@ def home_page(channel_name):
     return jsonify(read_messages(channel['file'], channel['welcome_message']))
 
 # POST: Send a message
-@app.route('/', methods=['POST'])
-def send_message():
+@app.route('/<channel_name>/', methods=['POST'])
+def send_message(channel_name):
     # fetch channels from server
+    channel = get_channel_config(channel_name)
+    if not channel:
+        return "Channel not found", 404
     # check authorization header
-    if not check_authorization(request):
+    if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
     # check if message is present
     message = request.json
@@ -150,32 +173,30 @@ def send_message():
         extra = None
     else:
         extra = message['extra']
+    if not filter_message(message): # to do!?
+        return "Message contains inappropriate content", 400
     # add message to messages
-    messages = read_messages()
+    messages = read_messages(channel['file'], channel['welcome_message'])
     messages.append({'content': message['content'],
                      'sender': message['sender'],
                      'timestamp': message['timestamp'],
                      'extra': extra,
                      })
-    save_messages(messages)
+    if len(messages) > MAX_MESSAGES:
+        messages = messages[-MAX_MESSAGES:]
+    save_messages(channel['file'], messages)
     return "OK", 200
 
-def read_messages():
-    global CHANNEL_FILE
+def read_messages(file, welcome_message):
     try:
-        f = open(CHANNEL_FILE, 'r')
-    except FileNotFoundError:
-        return []
-    try:
-        messages = json.load(f)
-    except json.decoder.JSONDecodeError:
-        messages = [WELCOME_MESSAGE]
-    f.close()
+        with open(file, 'r') as f:
+            messages = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        messages = [welcome_message]
     return messages
 
-def save_messages(messages):
-    global CHANNEL_FILE
-    with open(CHANNEL_FILE, 'w') as f:
+def save_messages(file, messages):
+    with open(file, 'w') as f:
         json.dump(messages, f)
 
 # Start development web server

@@ -38,7 +38,6 @@ db.create_all()  # create database if necessary
 
 SERVER_AUTHKEY = '1234567890'
 
-
 # The Home page is accessible to anyone
 @app.route('/')
 def home_page():
