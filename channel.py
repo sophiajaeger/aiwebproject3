@@ -173,11 +173,19 @@ def send_message(channel_name):
         extra = None
     else:
         extra = message['extra']
-    if not filter_message(message): # to do!?
-        return "Message contains inappropriate content", 400
     # add message to messages
     messages = read_messages(channel['file'], channel['welcome_message'])
-    messages.append({'content': message['content'],
+        # but check for inappropriate content first
+    if not filter_message(message):
+        system_message = {
+            'content': 'Your message contained inappropriate content and was not posted.',
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'extra': None
+        }
+        messages.append(system_message)
+    else:
+        messages.append({'content': message['content'],
                      'sender': message['sender'],
                      'timestamp': message['timestamp'],
                      'extra': extra,
