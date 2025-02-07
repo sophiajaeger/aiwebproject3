@@ -5,6 +5,7 @@ from flask import Flask, request, render_template, jsonify
 import json
 import requests
 
+
 # Class-based application configuration
 class ConfigClass(object):
     """ Flask application config """
@@ -24,6 +25,31 @@ CHANNEL_NAME = "The One and Only Channel"
 CHANNEL_ENDPOINT = "http://localhost:5001" # don't forget to adjust in the bottom of the file
 CHANNEL_FILE = 'messages.json'
 CHANNEL_TYPE_OF_SERVICE = 'aiweb24:chat'
+
+# filter out inappropriate messages
+def filter_message(message):
+    unwanted_words = ['spam', 'advertisement']
+    for word in unwanted_words:
+        if word in message['content'].lower():
+            return False
+    return True
+
+def profanity_filter(message):
+    url = "https://api.apilayer.com/bad_words?censor_character=censor_character"
+    headers= {
+        "apikey": "X22UMxBBcyIhaFPXWXDm9PH2ZxUCwqXV"
+    }
+
+    payload = message['content'].encode("utf-8")
+    response = requests.post(url, headers=headers, data=payload)
+    #response= requests.request("POST", url, headers=headers, data = payload)
+    
+    if response.status_code != 200:
+        print("error from api")
+        return False
+    
+    result = response.json()
+    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
 
 @app.cli.command('register')
 def register_command():
@@ -85,10 +111,16 @@ def send_message():
         return "No sender", 400
     if not 'timestamp' in message:
         return "No timestamp", 400
-    if not 'extra' in message:
-        extra = None
-    else:
-        extra = message['extra']
+    
+    extra = message.get('extra', None)
+    
+    #check for bad words with profanity filter
+    if profanity_filter(message):
+        return "Message contains inappropriate content",400
+    
+    #if not filter_message(message): # to do!?
+        #return "Message contains inappropriate content", 400
+    
     # add message to messages
     messages = read_messages()
     messages.append({'content': message['content'],
