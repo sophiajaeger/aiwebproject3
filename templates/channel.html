@@ -1,10 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Channel {{ channel.name }}</title>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
+        <title>Channel {{channel_name}} </title> <!-- title displayed in the browser tab -->
+        <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                min-height: 100vh;
+                margin: 0;
+                height: 100%;
+                font-family: Arial, sans-serif;
+                color: #121c25;
+                bottom: 0;
+            }
+    
+            .header {
+                position: sticky;
+                top: 0;
+                height: 6vh;
+                width: 100%;
+                margin: 0;
+                padding: 10px;
+                background-color: #4C5E64;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: left;
+                z-index: 1000;
+                overflow:hidden;
+            }
+    
+            .header h2 {
+                font-size: 2rem;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+    
+            .header img {
+                width: 60px;
+                height: 60px;
+                margin-right: 10px;
+            }
+    
+            .footer {
+                position: sticky;
+                bottom: 0;
+                height: 4vh;
+                width: 100%;
+                margin: 0;
+                padding: 10px;
+                background-color: #4C5E64;
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-top: auto;
+            }
+
+            .footer a{
+                color: white;
+            }
+       
+            .footer a:hover {
+                text-decoration: underline;
+            }
+        </style>
+    </head>
 <body>
+    <div class="header" id="myHeader">
+        <h2>
+            <img src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}" alt="AdventureAtlas Logo">
+            AdventureAtlas
+        </h2>
+    </div>
 <p>The distributed messenger. <a href="{{ url_for('home_page') }}">List of channels.</a> </p>
 {% if channel %}
     <h1>Channel {{ channel.name }}</h1>
@@ -25,5 +98,11 @@
     <input type="submit" value="Post">
 </form>
 
+<div class = "footer">
+    <h2>
+        <!--link to go back to the search engine-->
+        <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+    </h2>
+</div>
 </body>
 </html>
