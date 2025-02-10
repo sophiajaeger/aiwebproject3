@@ -32,32 +32,18 @@ WELCOME_MESSAGE = {
 """
 CHANNELS = [
     {
-        'name': 'Africa',
-        'authkey': '0987654321',
-        'endpoint': 'http://localhost:5001/africa',
+        'name': 'Forum',
+        'authkey': '0987654320',
+        'endpoint': 'http://localhost:5001/forum',
         'file': 'africa_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to the Africa channel!',
+            'content': 'Welcome to the Forum!', # adjust !?
             'sender': 'System',
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
         }
     },
-    {
-        'name': 'Asia',
-        'authkey': '0987654322',
-        'endpoint': 'http://localhost:5001/asia',
-        'file': 'asia_messages.json',
-        'type_of_service': 'aiweb24:chat',
-        'welcome_message': {
-            'content': 'Welcome to the Asia channel!',
-            'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
-            'extra': None
-        }
-    },
-    # Add more channels for other continents
     {
         'name': 'Diary',
         'authkey': '0987654323',
@@ -73,7 +59,7 @@ CHANNELS = [
     }
 ]
 
-MAX_MESSAGES = 150  # Limit to 150 messages
+MAX_MESSAGES = 155  # Limit to 150 messages
 
 # filter out inappropriate messages
 def filter_message(message):
@@ -82,6 +68,28 @@ def filter_message(message):
         if word in message['content'].lower():
             return False
     return True
+
+
+def profanity_filter(message):
+    """
+    Checks if message content contains inappropriate words
+    returns True if inappropriate and false if normal
+    """
+    url = "https://api.apilayer.com/bad_words?censor_character=censor_character"
+    headers= {
+        "apikey": "X22UMxBBcyIhaFPXWXDm9PH2ZxUCwqXV"
+    }
+
+    payload = message['content'].encode("utf-8")
+    response = requests.post(url, headers=headers, data=payload)
+    #response= requests.request("POST", url, headers=headers, data = payload)
+    
+    if response.status_code != 200:
+        print("error from api")
+        return False
+    
+    result = response.json()
+    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
 
 """
 # Function to generate responses
@@ -175,8 +183,9 @@ def send_message(channel_name):
         extra = message['extra']
     # add message to messages
     messages = read_messages(channel['file'], channel['welcome_message'])
-        # but check for inappropriate content first
-    if not filter_message(message):
+    # but check for inappropriate content first 
+    #check for bad words with profanity filter
+    if profanity_filter(message):
         system_message = {
             'content': 'Your message contained inappropriate content and was not posted.',
             'sender': 'System',
