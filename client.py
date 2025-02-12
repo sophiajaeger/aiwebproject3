@@ -53,7 +53,6 @@ def show_channel():
     messages = response.json()
     return render_template("channel.html", channel=channel, messages=messages)
 
-
 @app.route('/post', methods=['POST'])
 def post_message():
     # send message to channel

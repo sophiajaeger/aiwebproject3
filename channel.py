@@ -1,10 +1,8 @@
-## channel.py - a simple message channel
-##
-
 from flask import Flask, request, render_template, jsonify
 import json
 import requests
-
+import datetime
+import os
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -20,11 +18,124 @@ app.app_context().push()  # create an app context before initializing db
 
 HUB_URL = 'http://localhost:5555'
 HUB_AUTHKEY = '1234567890'
+"""
 CHANNEL_AUTHKEY = '0987654321'
-CHANNEL_NAME = "The One and Only Channel"
+CHANNEL_NAME = "Diary"
 CHANNEL_ENDPOINT = "http://localhost:5001" # don't forget to adjust in the bottom of the file
-CHANNEL_FILE = 'messages.json'
+CHANNEL_FILE = 'diary_messages.json'
 CHANNEL_TYPE_OF_SERVICE = 'aiweb24:chat'
+WELCOME_MESSAGE = {
+    'content': 'Welcome to your personal travel diary where you can save all your favourite travel moments!',
+    'sender': 'System',
+    'timestamp': datetime.datetime.now().isoformat(),
+    'extra': None
+}
+"""
+DAILY_QUESTIONS = [
+    "What did you do today?", 
+    "What was the highlight of your day?",
+    "What challenges did you face today?", 
+    "Describe your day in three words"
+]
+
+CHANNELS = [
+    {
+        'name': 'Forum',
+        'authkey': '0987654320',
+        'endpoint': 'http://localhost:5001/forum',
+        'file': 'africa_messages.json',
+        'type_of_service': 'aiweb24:chat',
+        'welcome_message': {
+            'content': 'Welcome to the Forum!', # adjust !?
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'extra': None
+        }
+    },
+    {
+        'name': 'Diary',
+        'authkey': '0987654323',
+        'endpoint': 'http://localhost:5001/diary',
+        'file': 'diary_messages.json',
+        'type_of_service': 'aiweb24:chat',
+        'welcome_message': {
+            'content': 'Welcome to your personal travel diary!',
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'extra': None
+        }
+    }
+]
+
+MAX_MESSAGES = 155  # Limit to 150 messages
+
+# filter out inappropriate messages
+def filter_message(message):
+    unwanted_words = ['spam', 'advertisement']
+    for word in unwanted_words:
+        if word in message['content'].lower():
+            return False
+    return True
+
+
+def profanity_filter(message):
+    """
+    Checks if message content contains inappropriate words
+    returns True if inappropriate and false if normal
+    """
+    url = "https://api.apilayer.com/bad_words?censor_character=censor_character"
+    headers= {
+        "apikey": "X22UMxBBcyIhaFPXWXDm9PH2ZxUCwqXV"
+    }
+
+    payload = message['content'].encode("utf-8")
+    response = requests.post(url, headers=headers, data=payload)
+    #response= requests.request("POST", url, headers=headers, data = payload)
+    
+    if response.status_code != 200:
+        print("error from api")
+        return False
+    
+    result = response.json()
+    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
+
+"""
+# Function to generate responses
+def generate_response(message):
+    if 'help' in message['content'].lower():
+        return {
+            'content': 'How can I assist you with your studies?',
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(),
+            'extra': None
+        }
+    return None
+    """
+def read_diary_entries(file, user):
+    """read and return diary entries for a specific user."""
+    if not os.path.exists(file):
+        return {user: {"entries": {}, "current_question": 0}}
+
+    try:
+        with open(file, 'r') as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        data = {}
+
+    # Ensure the user has an entry space
+    if user not in data:
+        data[user] = {
+            "entries": {},
+            "current_question": 0
+        }
+
+    return data
+
+def save_diary_entries(file, data):
+    """save diary entries to a JSON file"""
+    with open(file, 'w') as f:
+        json.dump(data, f, indent=4)
+
 
 # filter out inappropriate messages
 def filter_message(message):
@@ -53,53 +164,76 @@ def profanity_filter(message):
 
 @app.cli.command('register')
 def register_command():
-    global CHANNEL_AUTHKEY, CHANNEL_NAME, CHANNEL_ENDPOINT
+    global HUB_URL, HUB_AUTHKEY, CHANNELS
 
-    # send a POST request to server /channels
-    response = requests.post(HUB_URL + '/channels', headers={'Authorization': 'authkey ' + HUB_AUTHKEY},
-                             data=json.dumps({
-                                "name": CHANNEL_NAME,
-                                "endpoint": CHANNEL_ENDPOINT,
-                                "authkey": CHANNEL_AUTHKEY,
-                                "type_of_service": CHANNEL_TYPE_OF_SERVICE,
-                             }))
+    for channel in CHANNELS:
+        # send a POST request to server /channels
+        response = requests.post(HUB_URL + '/channels', headers={'Authorization': 'authkey ' + HUB_AUTHKEY},
+                                data=json.dumps({
+                                    "name": channel['name'],
+                                    "endpoint": channel['endpoint'],
+                                    "authkey": channel['authkey'],
+                                    "type_of_service": channel['type_of_service'],
+                                 }))
 
-    if response.status_code != 200:
-        print("Error creating channel: "+str(response.status_code))
-        print(response.text)
-        return
+        if response.status_code != 200:
+            print("Error creating channel: "+str(response.status_code))
+            print(response.text)
+            return
 
-def check_authorization(request):
-    global CHANNEL_AUTHKEY
+def get_channel_config(name):
+    for channel in CHANNELS:
+        if channel['name'].lower() == name.lower():
+            return channel
+    return None
+
+def check_authorization(request, authkey):
     # check if Authorization header is present
     if 'Authorization' not in request.headers:
         return False
     # check if authorization header is valid
-    if request.headers['Authorization'] != 'authkey ' + CHANNEL_AUTHKEY:
+    if request.headers['Authorization'] != 'authkey ' + authkey:
         return False
     return True
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    global CHANNEL_NAME
-    if not check_authorization(request):
+    
+@app.route('/<channel_name>/health', methods=['GET'])
+def health_check(channel_name):
+    channel = get_channel_config(channel_name)
+    if not channel:
+        return "Channel not found", 404
+    if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
-    return jsonify({'name':CHANNEL_NAME}),  200
+    return jsonify({'name': channel['name']}), 200
 
 # GET: Return list of messages
-@app.route('/', methods=['GET'])
-def home_page():
-    if not check_authorization(request):
+@app.route('/<channel_name>/', methods=['GET'])
+def home_page(channel_name):
+    channel = get_channel_config(channel_name)
+    if not channel:
+        return "Channel not found", 404
+    if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
-    # fetch channels from server
-    return jsonify(read_messages())
+    
+    if channel_name.lower() == "forum":
+        return jsonify(read_messages(channel['file'], channel['welcome_message']))
+    
+    
+    elif channel_name.lower() == 'diary': 
+        user = request.args.get("user")
+        if not user:
+            return "User not specified", 400
+        data = read_diary_entries(channel['file'], user)
+        return jsonify(data[user]["entries"])
 
 # POST: Send a message
-@app.route('/', methods=['POST'])
-def send_message():
+@app.route('/<channel_name>/', methods=['POST'])
+def send_message(channel_name):
     # fetch channels from server
+    channel = get_channel_config(channel_name)
+    if not channel:
+        return "Channel not found", 404
     # check authorization header
-    if not check_authorization(request):
+    if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
     # check if message is present
     message = request.json
@@ -114,40 +248,84 @@ def send_message():
     
     extra = message.get('extra', None)
     
+    user = message ['sender']
+    today = datetime.datetime.now().strftime("%Y-%m-%d")
+    
     #check for bad words with profanity filter
     if profanity_filter(message):
         return "Message contains inappropriate content",400
     
-    #if not filter_message(message): # to do!?
-        #return "Message contains inappropriate content", 400
+    # send messages for forum channel
+    if channel_name.lower() == 'forum':
+        # add message to messages
+        messages = read_messages(channel['file'], channel['welcome_message'])
+        # but check for inappropriate content first 
+        #check for bad words with profanity filter
+        if profanity_filter(message):
+            system_message = {
+                'content': 'Your message contained inappropriate content and was not posted.',
+                'sender': 'System',
+                'timestamp': datetime.datetime.now().isoformat(),
+                'extra': None
+            }
+            messages.append(system_message)
+        else:
+            messages.append({'content': message['content'],
+                        'sender': message['sender'],
+                        'timestamp': message['timestamp'],
+                        'extra': extra,
+                        })
+        if len(messages) > MAX_MESSAGES:
+            messages = messages[-MAX_MESSAGES:]
+        save_messages(channel['file'], messages)
+        return "OK", 200
     
-    # add message to messages
-    messages = read_messages()
-    messages.append({'content': message['content'],
-                     'sender': message['sender'],
-                     'timestamp': message['timestamp'],
-                     'extra': extra,
-                     })
-    save_messages(messages)
-    return "OK", 200
+    elif channel_name.lower() == 'diary': 
+        data = read_diary_entries(channel['file'], user)
 
-def read_messages():
-    global CHANNEL_FILE
+        #create an entry if there hasn't been one today
+        if today not in data[user]["entries"]:
+            data[user]["entries"][today] = []
+
+        current_question_index = data[user]["current_question"]
+
+        if current_question_index >= len(DAILY_QUESTIONS):
+            return jsonify({"content": "You have completed today's diary!"}), 200
+        
+        # Store the answer
+        data[user]["entries"][today].append({
+            "question": DAILY_QUESTIONS[current_question_index],
+            "answer": message['content'],
+            "timestamp": message.get('timestamp', datetime.datetime.now().isoformat())
+        })
+
+        # Move to next question
+        data[user]["current_question"] += 1
+        save_diary_entries(channel['file'], data)
+
+        # Provide next question or completion message
+        if data[user]["current_question"] < len(DAILY_QUESTIONS):
+            next_question = DAILY_QUESTIONS[data[user]["current_question"]]
+            return jsonify({"content": next_question}), 200
+        else:
+            return jsonify({"content": "You have completed today's diary!"}), 200
+
+
+def read_messages(file, welcome_message):
     try:
-        f = open(CHANNEL_FILE, 'r')
-    except FileNotFoundError:
-        return []
-    try:
-        messages = json.load(f)
-    except json.decoder.JSONDecodeError:
-        messages = []
-    f.close()
+        with open(file, 'r') as f:
+            messages = json.load(f)
+    except (FileNotFoundError, json.decoder.JSONDecodeError):
+        messages = [welcome_message]
     return messages
 
-def save_messages(messages):
-    global CHANNEL_FILE
-    with open(CHANNEL_FILE, 'w') as f:
+
+
+def save_messages(file, messages):
+    with open(file, 'w') as f:
         json.dump(messages, f)
+
+
 
 # Start development web server
 # run flask --app channel.py register
