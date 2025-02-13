@@ -3,10 +3,14 @@ import json
 import requests
 import datetime
 import openai
+from dotenv import load_dotenv
 import os
+# Load environment variables from the .env file
+load_dotenv()
 
-# Set OpenAI API key from environment variable
+# Set the OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 def generate_diary_response(user_message):
     """
@@ -42,6 +46,47 @@ def generate_diary_response(user_message):
         print("Error generating diary response:", e)
         return "Sorry, I couldn't generate a response at the moment."
 
+def generate_travel_response(user_message):
+    """
+    Uses the OpenAI ChatCompletion API to generate a travel advice response.
+    The response is conversational and may ask follow-up questions.
+    If the user's message does not appear to be related to travel or places, 
+    the bot should respond with: 
+    "This channel is exclusively for travel tips. Please ask a travel-related question."
+    """
+    
+    system_prompt = (
+        "You are a knowledgeable travel assistant. Provide detailed travel advice, including attractions, tips and tricks, pros and cons of destinations, and restaurant recommendations. "
+        "Respond conversationally and ask follow-up questions if more details might be needed. "
+        "Please answer in detail with at least three complete sentences."
+        "Make sure your answers always have a logical conclusion."
+        "If the user's message does not appear to be related to travel or places, respond with: "
+        "'This channel is only for travel tips. Please ask a travel-related question.'"
+        )
+    
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+    
+    # Fallback if no API key is set (for testing)
+    if not openai.api_key:
+        return "This is a dummy travel response. Remember to always check local reviews and ask locals for the best tips. Would you like more details?"
+    
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=200,
+            temperature=0.7
+        )
+        reply = response["choices"][0]["message"]["content"].strip()
+        return reply
+    except Exception as e:
+        # Drucke den kompletten Fehler in der Konsole, damit du ihn sehen kannst
+        print("Error generating travel response:", e)
+        return f"Sorry, I couldn't generate a travel response at the moment. Error: {e}"
+
 # Class-based application configuration
 class ConfigClass(object):
     """ Flask application config """
@@ -71,32 +116,20 @@ WELCOME_MESSAGE = {
 """
 CHANNELS = [
     {
-        'name': 'Africa',
-        'authkey': '0987654321',
-        'endpoint': 'http://localhost:5001/africa',
-        'file': 'africa_messages.json',
-        'type_of_service': 'aiweb24:chat',
-        'welcome_message': {
-            'content': 'Welcome to the Africa channel!',
-            'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
-            'extra': None
-        }
-    },
-    {
-        'name': 'Asia',
+        'name': 'travel',  # statt "Adventurers Forum"
         'authkey': '0987654322',
-        'endpoint': 'http://localhost:5001/asia',
-        'file': 'asia_messages.json',
+        'endpoint': 'http://localhost:5001/travel',
+        'file': 'travel_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to the Asia channel!',
+            'content': ('Welcome to the Travel Forum! This channel is only for travel tips and advice. '
+                        'Feel free to ask about countries, continents, cities, attractions, restaurants and everything else what comes in your mind when you think about your next Trip.'),
             'sender': 'System',
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
         }
     },
-    # Add more channels for other continents
+    
     {
         'name': 'Diary',
         'authkey': '0987654323',
@@ -199,11 +232,21 @@ def send_message(channel_name):
         'extra': extra,
     })
 
+     # Check if the channel is the Travel channel ("travel") and generate a response
+    if channel['name'].lower() == 'travel' and message['sender'].lower() != 'travelbot':
+        travel_reply = generate_travel_response(message['content'])
+        bot_message = {
+            "content": travel_reply,
+            "sender": "TravelBot",
+            "timestamp": datetime.datetime.now().isoformat(),
+            "extra": None,
+        }
+        messages.append(bot_message) 
+
     # If this is the Diary channel, generate a DiaryBot response
     if channel['name'].lower() == 'diary' and message['sender'].lower() != 'diarybot':
-        bot_reply = generate_diary_response(message['content'])
         bot_message = {
-            "content": bot_reply,
+            "content": "That sounds interesting! Would you like to add more details?",
             "sender": "DiaryBot",
             "timestamp": datetime.datetime.now().isoformat(),
             "extra": None,
