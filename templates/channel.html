@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
-        <title>Channel {{channel_name}} </title> <!-- title displayed in the browser tab -->
+        <title>Channel {{ channel.name }} </title> <!-- title displayed in the browser tab -->
         <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
         <style>
             body {
@@ -46,6 +46,42 @@
                 height: 60px;
                 margin-right: 10px;
             }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 200px;
+                background-color: #4C5E64;
+                color: white;
+                padding: 20px;
+                box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            }
+
+            .sidebar a {
+                color: white;
+                text-decoration: none;
+                display: block;
+                margin: 10px 0;
+            }
+
+            .sidebar a:hover {
+                text-decoration: underline;
+            }
+
+            .content {
+                margin-left: 220px; /* Adjust based on sidebar width */
+                padding: 20px;
+            }
+
+            h1 {
+                margin-top: 20px;
+                margin-bottom: 20px;
+                font-size: 2rem;
+                color: #4C5E64;
+                text-align: center;
+            }
     
             .footer {
                 position: sticky;
@@ -64,10 +100,81 @@
 
             .footer a{
                 color: white;
+                text-decoration: none;
             }
        
             .footer a:hover {
                 text-decoration: underline;
+            }
+
+            /* style for the messages */
+            .message {
+                background-color: rgba(77, 95, 102, 0.5);
+                border-radius: 8px;
+                padding: 10px;
+                margin: 10px 0;
+                margin-left: 30px; /* Move the message box 30px to the right */
+                width: 75%;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .message h2 {
+                font-size: 1.2rem;
+                margin: 0;
+                color: #4C5E64;
+            }
+
+            .message p {
+                margin: 5px 0;
+            }
+
+            .message .content {
+                font-size: 1rem;
+                color: #333;
+            }
+
+            .message .timestamp {
+                font-size: 0.8rem;
+                color: #e3e3e3;
+                text-align: right;
+            }
+
+            .message-form {
+                background-color: #dbdfe0;
+                border-radius: 8px;
+                padding: 20px;
+                margin: 20px 0;
+                width: 50%;
+                margin-left: 25%;
+                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                position: sticky;
+                bottom: 10px;
+            }
+
+            .message-form input[type="text"], .message-form input[type="submit"] {
+                width: 95%;
+                padding: 10px;
+                margin: 5px 0;
+                border-radius: 4px;
+                border: 1px solid #ccc;
+            }
+
+            .message-form input[type="submit"] {
+                background-color: #4C5E64;
+                color: white;
+                cursor: pointer;
+                display:block;
+                margin: 0 auto;
+                width: 98%;
+            }
+
+            .message-form input[type="submit"]:hover {
+                background-color: #3b4a52;
+            }
+
+            .message-form label {
+                display: block;
+                margin: 5px 0;
             }
         </style>
     </head>
@@ -78,31 +185,54 @@
             AdventureAtlas
         </h2>
     </div>
-<p>The distributed messenger. <a href="{{ url_for('home_page') }}">List of channels.</a> </p>
-{% if channel %}
-    <h1>Channel {{ channel.name }}</h1>
+    <div class="content">
+        <div class="sidebar">
+            <h2>Navigation</h2>
+            <a href="{{ url_for('home_page') }}">Home</a>
+            {% for channel in channels %}
+                <a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a>
+            {% endfor %}
+        </div>
+        {% if channel %}
+            <h1>Channel {{ channel.name }}</h1>
 
-        {% for message in messages %}
-            <h2>{{ message.sender }}</h2>
-            <p>{{ message.content }}</p>
-            <p style="font-size: 60%">{{ message.timestamp }}</p>
-        {% endfor %}
-{% else %}
-    <h1>Channel not found</h1>
-{% endif %}
+                {% for message in messages %}
+                    <div class="message">
+                        <h2>{{ message.sender }}</h2>
+                        <p class="content">{{ message.content }}</p>
+                        <p class="timestamp"> {{ message.timestamp }}</p>
+                    </div>
+                {% endfor %}
+        {% else %}
+            <h1>Channel not found</h1>
+        {% endif %}
 
-<form action="post" method="post">
-    <input type="hidden" name="channel" value="{{ channel.endpoint | urlencode }}">
-    Sender: <input type="text" name="sender" id="sender"> <br>
-    Message: <input type="text" name="content" id="content"> <br>
-    <input type="submit" value="Post">
-</form>
+        <form class="message-form" action="post" method="post">
+            <input type="hidden" name="channel" value="{{ channel.endpoint | urlencode }}">
+            <label for="sender">Sender:</label>
+            <input type="text" name="sender" id="sender" required>
+            <label for="content">Message:</label>
+            <input type="text" name="content" id="content" required>
+                <label for="bot_reply">
+                    <input type="checkbox" name="bot_reply" id="bot_reply"> Request an automated response
+                </label>
+            <input type="submit" value="Post">
+        </form>
+    </div>
 
-<div class = "footer">
-    <h2>
-        <!--link to go back to the search engine-->
-        <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
-    </h2>
-</div>
+    <div class = "footer">
+        <h2>
+            <!--link to go back to the home page-->
+            <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+        </h2>
+    </div>
+
+    <script>
+        // Scroll to the bottom of the page when it is reloaded
+        window.onload = function() {
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+
 </body>
 </html>

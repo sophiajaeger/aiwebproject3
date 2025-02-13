@@ -91,18 +91,16 @@ def profanity_filter(message):
     result = response.json()
     return result.get("bad_words_total",0) > 0 #returns true if bad word was found
 
-"""
 # Function to generate responses
 def generate_response(message):
-    if 'help' in message['content'].lower():
-        return {
-            'content': 'How can I assist you with your studies?',
-            'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
-            'extra': None
-        }
-    return None
-    """
+    #if 'help' in message['content'].lower():
+    return {
+        'content': 'How can I assist you today?',
+        'sender': 'Bot',
+        'timestamp': datetime.datetime.now().isoformat(),
+        'extra': None
+    }
+    # return None
 
 @app.cli.command('register')
 def register_command():
@@ -177,10 +175,12 @@ def send_message(channel_name):
         return "No sender", 400
     if not 'timestamp' in message:
         return "No timestamp", 400
-    if not 'extra' in message:
-        extra = None
-    else:
-        extra = message['extra']
+    
+    extra = message.get('extra', None)
+    if 'bot_reply' in request.form:
+        extra = 'bot_reply'
+        print("bot reply :)")
+
     # add message to messages
     messages = read_messages(channel['file'], channel['welcome_message'])
     # but check for inappropriate content first 
@@ -199,6 +199,10 @@ def send_message(channel_name):
                      'timestamp': message['timestamp'],
                      'extra': extra,
                      })
+        if extra == 'bot_reply':
+            response = generate_response(message)
+            if response:
+                messages.append(response)
     if len(messages) > MAX_MESSAGES:
         messages = messages[-MAX_MESSAGES:]
     save_messages(channel['file'], messages)
