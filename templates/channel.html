@@ -78,7 +78,7 @@
             AdventureAtlas
         </h2>
     </div>
-<p>The distributed messenger. <a href="{{ url_for('home_page') }}">List of channels.</a> </p>
+
 {% if channel %}
     <h1>Channel {{ channel.name }}</h1>
 
@@ -96,11 +96,6 @@
     Sender: <input type="text" name="sender" id="sender"> <br>
     Message: <input type="text" name="content" id="content"> <br>
     <input type="submit" value="Post">
-</form>
-<form action="/diary/" method="POST">
-    <input type="hidden" name="user" value="{{ user }}">
-    <input type="text" name="content" placeholder="Write your diary entry">
-    <button type="submit">Submit</button>
 </form>
 
 <div class = "footer">

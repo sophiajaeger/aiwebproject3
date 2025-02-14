@@ -16,6 +16,7 @@ app = Flask(__name__)
 app.config.from_object(__name__ + '.ConfigClass')  # configuration
 app.app_context().push()  # create an app context before initializing db
 
+
 HUB_URL = 'http://localhost:5555'
 HUB_AUTHKEY = '1234567890'
 """
@@ -208,24 +209,36 @@ def health_check(channel_name):
 # GET: Return list of messages
 @app.route('/<channel_name>/', methods=['GET'])
 def home_page(channel_name):
+    
     channel = get_channel_config(channel_name)
+
     if not channel:
         return "Channel not found", 404
     if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
     
+    messages = read_messages(channel['file'], channel['welcome_message'])
     if channel_name.lower() == "forum":
-        return jsonify(read_messages(channel['file'], channel['welcome_message']))
+        return jsonify(messages)
     
     
     elif channel_name.lower() == 'diary': 
         user = request.args.get("user", None)
-        print('user')
+        #print('user')
         if not user:
             return "User not specified (channel.py)", 400
         data = read_diary_entries(channel['file'], user)
-
-        return render_template("channel.html", channel_name = channel_name, messages=data[user]["entries"], user= user)
+        #channel_obj = get_channel_config(channel_name)
+        
+        return render_template(
+            "channel.html",
+            channel = channel,
+            channel_name=channel_name,
+            messages=data[user]["entries"],
+            user=user
+        )
+    
+        #return render_template("channel.html", channel_name = channel_name, messages=data[user]["entries"], user = user, channel=channel_obj)
                     
 
 # POST: Send a message

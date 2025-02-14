@@ -48,7 +48,9 @@ def show_channel():
             break
     if not channel:
         return "Channel not found", 404
-    response = requests.get(channel['endpoint'], headers={'Authorization': 'authkey ' + channel['authkey']})
+    #response = requests.get(channel['endpoint'], headers={'Authorization': 'authkey ' + channel['authkey']})
+    endpoint_with_user = channel['endpoint'] + "?user=" + urllib.parse.quote(user)
+    response = requests.get(endpoint_with_user, headers={'Authorization': 'authkey ' + channel['authkey']})
     if response.status_code != 200:
         return "Error fetching messages: "+str(response.text), 400
     messages = response.json()

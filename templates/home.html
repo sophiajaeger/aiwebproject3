@@ -91,6 +91,7 @@
 
     <ul>
         {% for channel in channels %}
+            Guest = user
             <li><a href="{{ url_for('show_channel') }}?channel={{ channel.endpoint | urlencode }}&user=Guest">{{ channel.name }}</a> (Type: {{ channel.type_of_service}})</li>
         {% endfor %}
     </ul>
