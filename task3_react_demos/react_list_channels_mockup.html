@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple React App</title>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <script type="text/babel">
+
+        function ChannelList() {
+            const [channels, setChannels] = React.useState([]);
+
+            React.useEffect(() => {
+                // Simulating a fetch request
+                const jsonData = [
+                        {"authkey":"0987654321",
+                         "endpoint":"http://vm146.rz.uni-osnabrueck.de/usertobi/channel.wsgi",
+                         "name":"The One and Only Channel",
+                         "type_of_service":"aiweb24:chat"},
+                        {"authkey":"0987551121",
+                         "endpoint":"http://vm146.rz.uni-osnabrueck.de/u037/channel.wsgi/",
+                         "name":"AI Discussion Forum",
+                         "type_of_service": "aiweb24:chat"}
+                    ];
+                setChannels(jsonData);
+                console.log("Channels fetched");
+            }, []);
+
+            return (
+                <div>
+                    <h2>Channel List</h2>
+                    <ul>
+                        {channels.map(channel => (
+                            <li key={channel.id}>
+                                {channel.name} (URL: {channel.endpoint}, Type: {channel.type_of_service})
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        ReactDOM.render(
+            <div>
+                <h1>Chat client: List of channels</h1>
+                <ChannelList />
+
+            </div>,
+            document.getElementById('root'));
+    </script>
+</body>
+</html>

@@ -110,8 +110,19 @@ def generate_response(user_message, channel_name):
             'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
         }
+    elif channel_name.lower() == 'diary':
+        bot_response = generate_diary_response(user_message['sender'], user_message['content'])
+        return {
+            'content': bot_response,
+            'sender': 'Bot',
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
+            'extra': None
+        }
     else:
         return None
+    
+def generate_diary_response(user, user_message):
+    pass
 
 def generate_forum_response(user_message):
     """
@@ -282,10 +293,6 @@ def read_messages(file, welcome_message):
 def save_messages(file, messages):
     with open(file, 'w') as f:
         json.dump(messages, f)
-
-# Start development web server
-# run flask --app channel.py register
-# to register channel with hub
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)
