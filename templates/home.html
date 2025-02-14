@@ -91,7 +91,7 @@
 
     <ul>
         {% for channel in channels %}
-            <li><a href="{{ url_for('show_channel') }}?channel={{ channel.endpoint | urlencode }}">{{ channel.name }}</a> (Type: {{ channel.type_of_service}})</li>
+            <li><a href="{{ url_for('show_channel') }}?channel={{ channel.endpoint | urlencode }}&user=Guest">{{ channel.name }}</a> (Type: {{ channel.type_of_service}})</li>
         {% endfor %}
     </ul>
     <div class="footer">

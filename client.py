@@ -38,6 +38,7 @@ def home_page():
 def show_channel():
     # fetch list of messages from channel
     show_channel = request.args.get('channel', None)
+    user = request.args.get('user', None)
     if not show_channel:
         return "No channel specified", 400
     channel = None
@@ -51,7 +52,7 @@ def show_channel():
     if response.status_code != 200:
         return "Error fetching messages: "+str(response.text), 400
     messages = response.json()
-    return render_template("channel.html", channel=channel, messages=messages)
+    return render_template("channel.html", channel=channel, messages=messages, user = user)
 
 @app.route('/post', methods=['POST'])
 def post_message():

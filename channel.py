@@ -1,8 +1,8 @@
-from flask import Flask, request, render_template, jsonify
+from flask import Flask, request, render_template, jsonify, redirect, url_for
 import json
 import requests
 import datetime
-import os
+import os 
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -219,11 +219,14 @@ def home_page(channel_name):
     
     
     elif channel_name.lower() == 'diary': 
-        user = request.args.get("user")
+        user = request.args.get("user", None)
+        print('user')
         if not user:
-            return "User not specified", 400
+            return "User not specified (channel.py)", 400
         data = read_diary_entries(channel['file'], user)
-        return jsonify(data[user]["entries"])
+
+        return render_template("channel.html", channel_name = channel_name, messages=data[user]["entries"], user= user)
+                    
 
 # POST: Send a message
 @app.route('/<channel_name>/', methods=['POST'])
@@ -235,19 +238,37 @@ def send_message(channel_name):
     # check authorization header
     if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
+    
+    if request.form:  # Handling form submission from HTML
+        sender = request.form.get("sender")
+        content = request.form.get("content")
+        timestamp = datetime.datetime.now().isoformat()
+
+        if not message:
+            return "No message", 400
+        if not 'content' in message:
+            return "No content", 400
+        if not 'sender' in message:
+            return "No sender", 400
+        if not 'timestamp' in message:
+            return "No timestamp", 400
+        
+        message={
+            "content": content,
+            "sender": sender,
+            "timestamp": timestamp
+        }
+
+    else:   
     # check if message is present
-    message = request.json
-    if not message:
-        return "No message", 400
-    if not 'content' in message:
-        return "No content", 400
-    if not 'sender' in message:
-        return "No sender", 400
-    if not 'timestamp' in message:
-        return "No timestamp", 400
+        message = request.json
+
+        if not message or 'content' not in message or 'sender' not in message:
+            return "Invalid JSON data", 400
     
     extra = message.get('extra', None)
     
+    # save what the user entereed for 'sender' as 'user'
     user = message ['sender']
     today = datetime.datetime.now().strftime("%Y-%m-%d")
     
@@ -309,7 +330,7 @@ def send_message(channel_name):
             return jsonify({"content": next_question}), 200
         else:
             return jsonify({"content": "You have completed today's diary!"}), 200
-
+    return redirect(url_for('home_page', channel_name=channel_name))
 
 def read_messages(file, welcome_message):
     try:
