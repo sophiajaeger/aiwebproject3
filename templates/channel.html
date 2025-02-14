@@ -16,7 +16,7 @@
     </div>
     <div class="content">
         <div class="sidebar">
-            <h2>Navigation</h2>
+            <h2><br>Navigation</h2>
             <a href="{{ url_for('home_page') }}">Home</a>
             {% for channel in channels %}
                 <a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a>
@@ -24,6 +24,7 @@
         </div>
         {% if channel %}
             <h1>Channel {{ channel.name }}</h1>
+            <p><br></p>
             <div id="messages">
                 {% for message in messages %}
                     <div class="message">
@@ -51,7 +52,7 @@
         </form>
     </div>
 
-    <div class = "footer">
+    <div class="footer">
         <h2>
             <!--link to go back to the home page-->
             <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
@@ -73,7 +74,6 @@
         function scrollToBottom() {
             window.scrollTo(0, document.body.scrollHeight);
         }
-       
     </script>
     <script type="text/babel"> 
     </script>
