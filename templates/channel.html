@@ -15,6 +15,7 @@
             font-family: Arial, sans-serif;
             color: #121c25;
             bottom: 0;
+            min-height: 100vh;
         }
 
         .header {
@@ -211,7 +212,7 @@
             <h1>Channel not found</h1>
         {% endif %}
 
-        <form class="message-form" action="post" method="post">
+        <form id="message-form" class="message-form" action="post" method="post"> <!-- still need to change action so it doesnt send the whole page -->
             <input type="hidden" name="channel" value="{{ channel.endpoint | urlencode }}">
             <label for="sender">Sender:</label>
             <input type="text" name="sender" id="sender" required>
@@ -234,11 +235,16 @@
     <script>
         window.onload = scrollToBottom();
 
+        // automtically scroll when sending a message
+        document.getElementById("message-form").addEventListener("submit", function() {
+            setTimeout(scrollToBottom, 100); // Leichte Verzögerung, um sicherzustellen, dass die Nachricht geladen wird
+        });
+
         // Function to scroll to the bottom of the messages
         function scrollToBottom() {
             window.scrollTo(0, document.body.scrollHeight);
         }
-            
+       
     </script>
 
 </body>

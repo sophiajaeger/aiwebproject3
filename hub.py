@@ -144,7 +144,7 @@ def create_channel():
 
 @app.route('/channels', methods=['GET'])
 def get_channels():
-    channels = Channel.query.all()
+    channels = Channel.query.filter(Channel.active == True).all()
     return jsonify(channels=[{'name': c.name,
                               'endpoint': c.endpoint,
                               'authkey': c.authkey,

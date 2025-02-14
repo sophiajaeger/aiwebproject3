@@ -2,6 +2,17 @@ from flask import Flask, request, render_template, jsonify
 import json
 import requests
 import datetime
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from the .env file
+load_dotenv()
+
+
+# Set the OpenAI API key from the environment variable
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -26,7 +37,8 @@ CHANNELS = [
         'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to the Forum!', # adjust !?
+            'content': ('Welcome to the Travel Forum! This channel is only for travel tips and advice. '
+                        'Feel free to ask about countries, continents, cities, attractions, restaurants and everything else what comes in your mind when you think about your next Trip.'), 
             'sender': 'System',
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
@@ -77,18 +89,70 @@ def profanity_filter(message):
         return False
     
     result = response.json()
-    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
+    if result.get("bad_words_total",0) > 0:
+        try:
+            # when testing, we realized it excluded the word beach, so we added an exception for it
+            if result.get("bad_words_list").get("word").str().lower() == 'beach': 
+                return False
+            else:
+                return True #returns true if bad word was found
+        except:
+            pass
+    return False
 
 # Function to generate responses
-def generate_response(message):
-    #if 'help' in message['content'].lower():
-    return {
-        'content': 'How can I assist you today?',
-        'sender': 'Bot',
-        'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
-        'extra': None
-    }
-    # return None
+def generate_response(user_message, channel_name):
+    if channel_name.lower() == 'forum':
+        bot_response = generate_forum_response(user_message['content'])
+        return {
+            'content': bot_response,
+            'sender': 'Bot',
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
+            'extra': None
+        }
+    else:
+        return None
+
+def generate_forum_response(user_message):
+    """
+    Uses the OpenAI ChatCompletion API to generate a travel advice response.
+    The response is conversational and may ask follow-up questions.
+    If the user's message does not appear to be related to travel or places, 
+    the bot should respond with: 
+    "This channel is exclusively for travel tips. Please ask a travel-related question."
+    """
+    
+    system_prompt = (
+        "You are a knowledgeable travel assistant. Provide detailed travel advice, including attractions, tips and tricks, pros and cons of destinations, and restaurant recommendations. "
+        "Respond conversationally and ask follow-up questions if more details might be needed. "
+        "Please answer in detail with at least three complete sentences."
+        "Make sure your answers always have a logical conclusion."
+        "If the user's message does not appear to be related to travel or places, respond with: "
+        "'This channel is only for travel tips. Please ask a travel-related question.'"
+        )
+    
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+    
+    # Fallback if no API key is set (for testing)
+    if not client.api_key:
+        return "This is a dummy travel response, since you did not provide an OpenAI API key. Remember to always check local reviews and ask locals for the best tips."
+    
+    try:
+        response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                max_tokens=200,
+                temperature=0.7
+            )
+        reply = response.choices[0].message.content
+        return reply
+    except Exception as e:
+        # Drucke den kompletten Fehler in der Konsole, damit du ihn sehen kannst
+        print("Error generating travel response:", e)
+        return f"Sorry, I couldn't generate a travel response at the moment. Error: {e}"
 
 @app.cli.command('register')
 def register_command():
@@ -172,7 +236,7 @@ def send_message(channel_name):
     if not 'timestamp' in message:
         return "No timestamp", 400
     
-    extra = message.get('extra', None)
+    extra = 'bot_reply' # message.get('extra', None)
     if 'bot_reply' in request.form:
         extra = 'bot_reply'
         print("bot reply :)")
@@ -197,7 +261,7 @@ def send_message(channel_name):
                      'extra': extra,
                      })
         if extra == 'bot_reply':
-            response = generate_response(message)
+            response = generate_response(message, channel_name)
             if response:
                 messages.append(response)
     # check if messages exceed limit
