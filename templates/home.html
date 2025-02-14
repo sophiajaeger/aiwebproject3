@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
-    <title>AdventureAtlas</title> <!-- title displayed in the browser tab -->
+    <title>AdventureAtlas</title> 
     <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
     <style>
         body {
@@ -16,8 +16,9 @@
             height: 100%;
             font-family: Arial, sans-serif;
             background-color: #20263F;
-            background: url("{{ url_for('static', filename='images/background_results.jpg') }}") no-repeat center center fixed;
-            background-size: cover;
+            /* background image source: https://fiverr-res.cloudinary.com/images/q_auto,f_auto/gigs/154860765/original/d3683d9d859a2c93562454afafc93dc093da249f/do-a-flat-landscape.png */
+            background: url("{{ url_for('static', filename='images/background_home.jpg') }}") no-repeat center center fixed alpha=0.5; 
+            background-size: cover; 
             background-blend-mode: darken;
             color: #121c25;
         }
@@ -35,6 +36,7 @@
             align-items: center;
             justify-content: left;
             z-index: 1000;
+            overflow:hidden;
         }
 
         .header h2 {
@@ -51,29 +53,42 @@
             margin-right: 10px;
         }
 
-        .footer {
-            position: sticky;
-            bottom: 0;
-            height: 4vh;
-            width: 100%;
-            margin: 0;
-            padding: 10px;
-            background-color: #4C5E64;
+        .main-content {
+            text-align: center; 
+            margin-top: 50px;
+        }
+
+        .main-content img {
+            width: 150px; 
+            height: 150px;
+        }
+
+        .main-content h1 {
+            font-size: 3rem;
+            margin: 20px 0;
+        }
+
+        .main-content h3 {
+            font-size: 1.5rem;
+            margin: 20px 0;
+        }
+
+        .channel-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .channel-list li {
+            margin: 10px 0;
+        }
+
+        .channel-list a {
             color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: auto;
-        }
-
-        .footer a {
-            font-size: 1.2rem;
-            color: #4C5E64;
             text-decoration: none;
-            margin-left: 10px;
+            font-size: 1.2rem;
         }
 
-        .footer a:hover {
+        .channel-list a:hover {
             text-decoration: underline;
         }
     </style>
@@ -85,19 +100,17 @@
             AdventureAtlas
         </h2>
     </div>
-    <h3>Greetings adventurers, <br>
-        at AdventureAtlas, we connect stories and travel tips to inspire your next big journey. <br> Let’s discover the world together!</h3>
-    <h1>List of message channels</h1>
-
-    <ul>
-        {% for channel in channels %}
-            <li><a href="{{ url_for('show_channel') }}?channel={{ channel.endpoint | urlencode }}">{{ channel.name }}</a> (Type: {{ channel.type_of_service}})</li>
-        {% endfor %}
-    </ul>
-    <div class="footer">
-        <h2>
-            Back to Home
-        </h2>
+    <div class="main-content">
+        <img src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}" alt="AdventureAtlas Logo">
+        <h1>AdventureAtlas</h1>
+        <h3>Greetings adventurers, <br>
+            at AdventureAtlas, we connect stories and travel tips to inspire your next big journey. <br> Let’s discover the world together!</h3>
+        <h1>List of message channels</h1>
+        <ul class="channel-list">
+            {% for channel in channels %}
+                <li><a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a> (Type: {{ channel.type_of_service }})</li>
+            {% endfor %}
+        </ul>
     </div>
 </body>
 </html>

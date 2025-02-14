@@ -17,25 +17,13 @@ app.app_context().push()  # create an app context before initializing db
 
 HUB_URL = 'http://localhost:5555'
 HUB_AUTHKEY = '1234567890'
-"""
-CHANNEL_AUTHKEY = '0987654321'
-CHANNEL_NAME = "Diary"
-CHANNEL_ENDPOINT = "http://localhost:5001" # don't forget to adjust in the bottom of the file
-CHANNEL_FILE = 'diary_messages.json'
-CHANNEL_TYPE_OF_SERVICE = 'aiweb24:chat'
-WELCOME_MESSAGE = {
-    'content': 'Welcome to your personal travel diary where you can save all your favourite travel moments!',
-    'sender': 'System',
-    'timestamp': datetime.datetime.now().isoformat(),
-    'extra': None
-}
-"""
+
 CHANNELS = [
     {
         'name': 'Forum',
         'authkey': '0987654320',
         'endpoint': 'http://localhost:5001/forum',
-        'file': 'africa_messages.json',
+        'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
             'content': 'Welcome to the Forum!', # adjust !?
@@ -51,9 +39,9 @@ CHANNELS = [
         'file': 'diary_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to your personal travel diary!',
+            'content': 'Welcome to your personal travel diary! Here you can save all your favourite travel moments so that only you can look at them.',
             'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
         }
     }
@@ -97,7 +85,7 @@ def generate_response(message):
     return {
         'content': 'How can I assist you today?',
         'sender': 'Bot',
-        'timestamp': datetime.datetime.now().isoformat(),
+        'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
         'extra': None
     }
     # return None
@@ -153,7 +141,15 @@ def home_page(channel_name):
         return "Channel not found", 404
     if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
-    return jsonify(read_messages(channel['file'], channel['welcome_message']))
+    # load only messages from certain day if date_filter is active
+    messages = read_messages(channel['file'], channel['welcome_message'])
+    try: 
+        date_filter = request.args.get('date', None)
+        if date_filter:
+            messages = [m for m in messages if m['timestamp'].startswith(date_filter)]
+    except:
+        pass
+    return jsonify(messages)
 
 # POST: Send a message
 @app.route('/<channel_name>/', methods=['POST'])
@@ -181,15 +177,16 @@ def send_message(channel_name):
         extra = 'bot_reply'
         print("bot reply :)")
 
-    # add message to messages
+    # load previous messages    
     messages = read_messages(channel['file'], channel['welcome_message'])
-    # but check for inappropriate content first 
-    #check for bad words with profanity filter
+    # filter out system messages
+    messages = [m for m in messages if m['sender'] != 'System']
+    # check for inappropriate content 
     if profanity_filter(message):
         system_message = {
             'content': 'Your message contained inappropriate content and was not posted.',
             'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
         }
         messages.append(system_message)
@@ -203,8 +200,10 @@ def send_message(channel_name):
             response = generate_response(message)
             if response:
                 messages.append(response)
+    # check if messages exceed limit
     if len(messages) > MAX_MESSAGES:
         messages = messages[-MAX_MESSAGES:]
+    # now save message to messages file
     save_messages(channel['file'], messages)
     return "OK", 200
 

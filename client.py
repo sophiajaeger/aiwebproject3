@@ -68,7 +68,7 @@ def post_message():
         return "Channel not found", 404
     message_content = request.form['content']
     message_sender = request.form['sender']
-    message_timestamp = datetime.datetime.now().isoformat()
+    message_timestamp = datetime.datetime.now().isoformat(" ", "seconds")
     response = requests.post(channel['endpoint'],
                              headers={'Authorization': 'authkey ' + channel['authkey']},
                              json={'content': message_content, 'sender': message_sender, 'timestamp': message_timestamp})
