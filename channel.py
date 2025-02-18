@@ -127,7 +127,7 @@ def generate_diary_response(user, user_message):
 def generate_forum_response(user_message):
     """
     Uses the OpenAI ChatCompletion API to generate a travel advice response.
-    The response is conversational and may ask follow-up questions.
+    The response is conversational but may not ask follow-up questions.
     If the user's message does not appear to be related to travel or places, 
     the bot should respond with: 
     "This channel is exclusively for travel tips. Please ask a travel-related question."
@@ -135,9 +135,10 @@ def generate_forum_response(user_message):
     
     system_prompt = (
         "You are a knowledgeable travel assistant. Provide detailed travel advice, including attractions, tips and tricks, pros and cons of destinations, and restaurant recommendations. "
-        "Respond conversationally and ask follow-up questions if more details might be needed. "
+        "Respond conversationally but do not ask follow-up questions. "
         "Please answer in detail with at least three complete sentences."
         "Make sure your answers always have a logical conclusion."
+        "Make sure that your answer only contains full sentences and ends with a period."
         "If the user's message does not appear to be related to travel or places, respond with: "
         "'This channel is only for travel tips. Please ask a travel-related question.'"
         )
@@ -271,7 +272,7 @@ def send_message(channel_name):
                      'timestamp': message['timestamp'],
                      'extra': extra,
                      })
-        if extra == 'bot_reply':
+        if extra == 'bot_reply' and channel_name == 'forum':
             response = generate_response(message, channel_name)
             if response:
                 messages.append(response)

@@ -214,7 +214,7 @@ body {
     justify-content: center;
     margin-top: 10px;
     padding-top: 90px;
-    padding-left: 10%;
+    padding-left: 0;
 }
 
 .main-content .logo-title img {
@@ -224,7 +224,7 @@ body {
 
 .main-content .logo-title h1 {
     font-size: 4rem;
-    margin: 0 20px;
+    margin: 0 0px;
     padding-top: 30px;
 }
 
@@ -244,7 +244,7 @@ body {
     font-size: 1.5rem;
     margin: 10px 0;
     text-align: center;
-    padding-left: 17%;
+    padding-left: 9%;
 }
 
 .channel-list {
