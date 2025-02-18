@@ -7,12 +7,10 @@ from dotenv import load_dotenv
 import os
 
 # Load environment variables from the .env file
-load_dotenv()
-
+load_dotenv('/home/u006/.env')
 
 # Set the OpenAI API key from the environment variable
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 
 # Class-based application configuration
 class ConfigClass(object):
