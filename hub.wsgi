@@ -1,16 +1,18 @@
 import sys
 import os
+import site
 
-# Add your project directory to sys.path
-sys.path.insert(0, "/home/u006/public_html/aiwebproject3")
+# Add your project directory so Python can find your modules (e.g. hub.py)
+sys.path.insert(0, "/home/u006/aiwebproject3")
 
-# Activate your virtual environment
-activate_this = os.path.join("/home/u006/public_html/aiwebproject3/venv", "bin", "activate_this.py")
-with open(activate_this) as f:
-    exec(f.read(), dict(__file__=activate_this))
+# Add the virtual environment's site-packages directory to the Python path.
+venv_site = "/home/u006/venv/lib/python3.10/site-packages"
+site.addsitedir(venv_site)
 
-# Now import your app
+# Now import your app from hub.py
 from hub import app
 
+# Set the WSGI application callable for Apache
 application = app
+
 
