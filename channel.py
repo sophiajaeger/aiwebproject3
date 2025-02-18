@@ -2,7 +2,7 @@ from flask import Flask, request, render_template, jsonify
 import json
 import requests
 import datetime
-from openai import OpenAI
+import openai 
 from dotenv import load_dotenv
 import os
 
@@ -11,7 +11,7 @@ load_dotenv()
 
 
 # Set the OpenAI API key from the environment variable
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 # Class-based application configuration
@@ -149,16 +149,17 @@ def generate_forum_response(user_message):
     ]
     
     # Fallback if no API key is set (for testing)
-    if not client.api_key:
+    if not openai.api_key:
         return "This is a dummy travel response, since you did not provide an OpenAI API key. Remember to always check local reviews and ask locals for the best tips."
     
     try:
-        response = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-                max_tokens=200,
-                temperature=0.7
-            )
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            max_tokens=200,
+            temperature=0.7
+        )
+
         reply = response.choices[0].message.content
         return reply
     except Exception as e:

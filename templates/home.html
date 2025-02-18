@@ -21,6 +21,9 @@
         </div>
         <h3>Greetings Adventurers, </h3>
         <h3>at AdventureAtlas, we connect stories <br> and travel tips to inspire your next big journey. <br> Let’s discover the world together! <br> </h3>
+        
+        <div id="root"></div>
+        
         <h2>List of Message Channels:</h2>
         <ul class="channel-list">
             {% for channel in channels %}
@@ -28,5 +31,54 @@
             {% endfor %}
         </ul>
     </div>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script type="text/babel">
+        function ChannelList() {
+            const [channels, setChannels] = React.useState([]);
+
+            React.useEffect(() => {
+                // Simulating a fetch request
+                const jsonData = [
+                        {'name': 'Forum',
+                        'authkey': '0987654320',
+                        'endpoint': 'http://localhost:5001/forum',
+                        'type_of_service': 'aiweb24:chat'},
+                        {'name': 'Diary',
+                        'authkey': '0987654323',
+                        'endpoint': 'http://localhost:5001/diary',
+                        'type_of_service': 'aiweb24:chat'}
+                    ];
+                setChannels(jsonData);
+                console.log("Channels fetched");
+            }, []);
+
+            return (
+                <div>
+                    <h2>Channel List</h2>
+                    <ul>
+                        {channels.map(channel => (
+                            <li key={channel.id}>
+                                {channel.name} (URL: {channel.endpoint}, Type: {channel.type_of_service})
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        // main part
+        ReactDOM.render(
+            <div>
+                <h1>Chat client: List of channels</h1>
+                <ChannelList />
+
+            </div>,
+            document.getElementById('root'));
+    </script>
 </body>
 </html>
+
+
+
