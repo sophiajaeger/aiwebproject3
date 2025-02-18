@@ -86,7 +86,7 @@ def home_page():
     # find all active channels
     channels = Channel.query.filter_by(active=True).all()
     # render hub_home.html template
-    return render_template("hub_home.html", channels=channels, STANDARD_CLIENT_URL=STANDARD_CLIENT_URL)
+    return render_template("home.html", channels=channels, STANDARD_CLIENT_URL=STANDARD_CLIENT_URL)
 
 
 # Flask REST route for POST to /channels
