@@ -26,14 +26,14 @@ app = Flask(__name__)
 app.config.from_object(__name__ + '.ConfigClass')  # configuration
 app.app_context().push()  # create an app context before initializing db
 
-HUB_URL = 'http://localhost:5555'
-HUB_AUTHKEY = '1234567890'
+HUB_URL = 'http://vm146.rz.uni-osnabrueck.de/hub'
+HUB_AUTHKEY = 'Crr-K24d-2N'
 
 CHANNELS = [
     {
         'name': 'Forum',
         'authkey': '0987654320',
-        'endpoint': 'http://localhost:5001/forum',
+        'endpoint': 'http://vm322.rz.uni-osnabrueck.de/u006/aiwebproject3/channel.wsgi',
         'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
@@ -47,7 +47,7 @@ CHANNELS = [
     {
         'name': 'Diary',
         'authkey': '0987654323',
-        'endpoint': 'http://localhost:5001/diary',
+        'endpoint': 'http://vm322.rz.uni-osnabrueck.de/u006/aiwebproject3/channel.wsgi',
         'file': 'diary_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
