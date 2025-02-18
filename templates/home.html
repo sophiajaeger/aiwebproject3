@@ -60,7 +60,7 @@
                     <ul>
                         {channels.map(channel => (
                             <li key={channel.id}>
-                                {channel.name} (URL: {channel.endpoint}, Type: {channel.type_of_service})
+                                <a href={channel.endpoint}>{channel.name}</a>
                             </li>
                         ))}
                     </ul>
@@ -71,7 +71,7 @@
         // main part
         ReactDOM.render(
             <div>
-                <h1>Chat client: List of channels</h1>
+                <h2>List of Message Channels:</h2>
                 <ChannelList />
 
             </div>,
