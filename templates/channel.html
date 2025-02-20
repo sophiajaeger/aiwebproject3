@@ -13,6 +13,16 @@
             <img src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}" alt="AdventureAtlas Logo">
             AdventureAtlas
         </h2>
+        <div class="profile-tab">
+            <img src="/static/images/profile-icon.png" alt="Profile Icon">
+            <div class="profile-dropdown">
+                {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('logout')}}"">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login')}}">Login</a>
+                {% endif %}
+            </div>
+        </div>
     </div>
     <div class="content">
         <div class="sidebar">
