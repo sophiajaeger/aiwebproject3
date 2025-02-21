@@ -43,23 +43,10 @@ CHANNELS = [
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
         }
-    },
-    {
-        'name': 'Diary',
-        'authkey': '0987654323',
-        'endpoint': 'http://localhost:5001/diary',
-        'file': 'diary_messages.json',
-        'type_of_service': 'aiweb24:chat',
-        'welcome_message': {
-            'content': 'Welcome to your personal travel diary! Here you can save all your favourite travel moments so that only you can look at them.',
-            'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
-            'extra': None
-        }
     }
 ]
 
-MAX_MESSAGES = 155  # Limit to 150 messages
+MAX_MESSAGES = 150  # Limit to 150 messages
 
 # filter out inappropriate messages
 def filter_message(message):
@@ -101,28 +88,14 @@ def profanity_filter(message):
     return False
 
 # Function to generate responses
-def generate_response(user_message, channel_name):
-    if channel_name.lower() == 'forum':
-        bot_response = generate_forum_response(user_message['content'])
-        return {
-            'content': bot_response,
-            'sender': 'Bot',
-            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
-            'extra': None
-        }
-    elif channel_name.lower() == 'diary':
-        bot_response = generate_diary_response(user_message['sender'], user_message['content'])
-        return {
-            'content': bot_response,
-            'sender': 'Bot',
-            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
-            'extra': None
-        }
-    else:
-        return None
-    
-def generate_diary_response(user, user_message):
-    pass
+def generate_response(user_message):
+    bot_response = generate_forum_response(user_message['content'])
+    return {
+        'content': bot_response,
+        'sender': 'Bot',
+        'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
+        'extra': None
+    }
 
 def generate_forum_response(user_message):
     """
@@ -273,8 +246,8 @@ def send_message(channel_name):
                      'timestamp': message['timestamp'],
                      'extra': extra,
                      })
-        if extra == 'bot_reply' and channel_name == 'forum':
-            response = generate_response(message, channel_name)
+        if extra == 'bot_reply':
+            response = generate_response(message)
             if response:
                 messages.append(response)
     # check if messages exceed limit

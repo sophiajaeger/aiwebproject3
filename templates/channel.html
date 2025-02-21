@@ -11,50 +11,50 @@
     
     <div id="react-root" class="root"></div>
 
-    <script>
-        var channelEndpoint = "{{ channel.endpoint|safe}}";
-        var channelName = "{{ channel.name }}";
-        var channelAuthkey = "";
-        if (channelName === "Forum") {
-            channelAuthkey = "0987654320";
-        } else if (channelName === "Diary") {
-            channelAuthkey = "0987654323";
-        }
-    </script>
-
     <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
     
     <script type="text/babel">
-        // const HUB_AUTHKEY = 'Crr-K24d-2N'; //still adjust?!
-        // const HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub";
+        const HUB_AUTHKEY = 'Crr-K24d-2N'; 
+        const HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub";
 
-        const HUB_AUTHKEY = '1234567890'
-        const HUB_URL = 'http://localhost:5555'
+        //const HUB_AUTHKEY = '1234567890'
+        //const HUB_URL = 'http://localhost:5555'
         
         function ChannelApp(){
             const[sender, setSender] = React.useState("");
             const[content, setContent] = React.useState("");
             const [username, setUsername] = React.useState(localStorage.getItem("username") || "");
-            // currentChannel can be "forum" or "diary" – default is "forum"
-            const [currentChannel, setCurrentChannel] = React.useState("forum");
             const [messages, setMessages] = React.useState([]);
             const [newMessage, setNewMessage] = React.useState("");
+            const [channels, setChannels] = React.useState([]);
 
+            React.useEffect(() => {
+                // Fetch list of channels from HUB_URL
+                fetch(HUB_URL + "/channels", {
+                   headers: { Authorization: "authkey " + HUB_AUTHKEY },
+                })
+                    .then(response => response.json())
+                    .then(data => setChannels(data.channels));
+            }, []);
+
+            // create a variable 'currentChannel' with a setfucntion and if there is a channel named forum in the channels list, set it as the current channel
+            const [currentChannel, setCurrentChannel] = React.useState("");
+            
             const fetchMessages = async () => {
                 try {
-                    const response = await fetch (channelEndpoint, {
+                    // fetch from the current channels endpoint
+                    const response = await fetch (currentChannel.endpoint, {
                         method: 'GET',
                         headers: {
-                            'Authorization': `authkey ${channelAuthkey}`
+                            'Authorization': `authkey ${currentChannel.authkey}`
                         }
                     });
                     const data = await response.json();
                     console.log("Fetched messages:", data)
 
-                    //adjust maybe
-                    setMessages([...data]);
+                    setMessages(data);
                 } catch (error) {
                     console.error("Error fetching messages:", error);
                 }
@@ -64,23 +64,21 @@
                 fetchMessages(); // initial load
                 const interval = setInterval(fetchMessages, 10000); //Polling every 10 sec
                 return () => clearInterval(interval);
-            }, []);
+            }, [currentChannel]);
 
             // Handle form submission with fetch() to send messages in the background
             const handleSubmit = async (e) => {
                 e.preventDefault();
                 try {
-                    const response = await fetch(channelEndpoint,{
+                    const response = await fetch(currentChannel.endpoint,{
                         method: 'POST', 
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `authkey ${channelAuthkey}`
+                            'Authorization': `authkey ${currentChannel.authkey}`
                         },
                         body: JSON.stringify({ sender, content, timestamp: new Date().toISOString() })    
                     });
 
-                    const result = await response.json();
-                    console.log(result);
                     // Clear inputs after successful send
                     setSender("");
                     setContent("");
@@ -90,9 +88,9 @@
                 }
             };
 
-            const handleUsernameChange = (e) => {
-                const name = e.target.value;
+            const handleUsernameChange = (name) => {
                 setUsername(name);
+                setSender(name);
                 localStorage.setItem("username", name);
                 };
 
@@ -114,7 +112,7 @@
                         <div className="profile-tab">
                             {username ? (
                                 <div>
-                                    <span>Hello, {username}</span>
+                                    <span>Hello {username} 😇</span>
                                     <img 
                                         src="{{ url_for('static', filename='images/profile-icon.png') }}" 
                                         alt="Profile Icon" 
@@ -125,9 +123,8 @@
                             <input 
                                 type="text" 
                                 placeholder="Enter your name" 
-                                value={username} 
-                                onChange={handleUsernameChange}
-                                // onKeyDown={({ key, target }) => key === 'Enter' && handleUsernameChange(target.value)}
+                                //onChange={handleUsernameChange}
+                                onKeyDown={({ key, target }) => key === 'Enter' && handleUsernameChange(target.value)}
                             />
                             )}
                         </div>
@@ -135,18 +132,22 @@
 
                     <div className="sidebar">
                         <h2>Navigation</h2>
-                        <a href="#" onClick={() => setCurrentChannel("forum")}>Forum</a>
-                        <a href="#" onClick={() => setCurrentChannel("diary")}>Diary</a>
+                        <ul>
+                            {channels.map(channel => (
+                                <li key={channel.endpoint}>
+                                    <span 
+                                        //save channel name and endpoint in currentChannel
+                                        onClick={() => setCurrentChannel(channel)}>{channel.name}
+                                    </span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
 
                     <div class="content">
-                        <h1>
-                            {currentChannel === "forum" ? "Travel Forum" : "My Travel Diary"}
-                        </h1>
-                        {currentChannel === "diary" && !username ? (
-                            <p>Please enter your name in the header to view your diary entries.</p>
-                        ) : (
-                            <div id="messages">
+                        <h1>{currentChannel.name}</h1>
+                        {console.log(currentChannel)}
+                        <div id="messages">
                             {messages.map((msg, index) => (
                                 <div key={index} className="message">
                                 <h2>{msg.sender}</h2>
@@ -154,14 +155,12 @@
                                 <p className="timestamp">{msg.timestamp}</p>
                                 </div>
                             ))}
-                            </div>
-                        )}
+                        </div>
 
                         <form id="message-form" onSubmit={handleSubmit} className="message-form">
-                            <input type="hidden" name="channel" value={channelEndpoint} />
-                            {username ? (
+                            {username && (
                             <input type="hidden" name="sender" value={username} />
-                            ): (<div></div>)}
+                            )}
                             <label htmlFor="content">Message:</label>
                             <input
                                 type="text"
