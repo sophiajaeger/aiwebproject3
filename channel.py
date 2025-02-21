@@ -1,8 +1,19 @@
 from flask import Flask, request, render_template, jsonify, redirect, url_for
+from flask_cors import CORS
 import json
 import requests
 import datetime
-import os 
+from openai import OpenAI
+from dotenv import load_dotenv
+import os
+
+# Load environment variables from the .env file
+load_dotenv()
+
+
+# Set the OpenAI API key from the environment variable
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -13,41 +24,24 @@ class ConfigClass(object):
 
 # Create Flask app
 app = Flask(__name__)
+CORS(app)
 app.config.from_object(__name__ + '.ConfigClass')  # configuration
 app.app_context().push()  # create an app context before initializing db
 
 
 HUB_URL = 'http://localhost:5555'
 HUB_AUTHKEY = '1234567890'
-"""
-CHANNEL_AUTHKEY = '0987654321'
-CHANNEL_NAME = "Diary"
-CHANNEL_ENDPOINT = "http://localhost:5001" # don't forget to adjust in the bottom of the file
-CHANNEL_FILE = 'diary_messages.json'
-CHANNEL_TYPE_OF_SERVICE = 'aiweb24:chat'
-WELCOME_MESSAGE = {
-    'content': 'Welcome to your personal travel diary where you can save all your favourite travel moments!',
-    'sender': 'System',
-    'timestamp': datetime.datetime.now().isoformat(),
-    'extra': None
-}
-"""
-DAILY_QUESTIONS = [
-    "What did you do today?", 
-    "What was the highlight of your day?",
-    "What challenges did you face today?", 
-    "Describe your day in three words"
-]
 
 CHANNELS = [
     {
         'name': 'Forum',
         'authkey': '0987654320',
         'endpoint': 'http://localhost:5001/forum',
-        'file': 'africa_messages.json',
+        'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to the Forum!', # adjust !?
+            'content': ('Welcome to the Travel Forum! This channel is only for travel tips and advice. '
+                        'Feel free to ask about countries, continents, cities, attractions, restaurants and everything else what comes in your mind when you think about your next Trip.'), 
             'sender': 'System',
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
@@ -60,9 +54,9 @@ CHANNELS = [
         'file': 'diary_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': 'Welcome to your personal travel diary!',
+            'content': 'Welcome to your personal travel diary! Here you can save all your favourite travel moments so that only you can look at them.',
             'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
         }
     }
@@ -98,70 +92,82 @@ def profanity_filter(message):
         return False
     
     result = response.json()
-    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
+    if result.get("bad_words_total",0) > 0:
+        try:
+            # when testing, we realized it excluded the word beach, so we added an exception for it
+            if result.get("bad_words_list").get("word").str().lower() == 'beach': 
+                return False
+            else:
+                return True #returns true if bad word was found
+        except:
+            pass
+    return False
 
-"""
 # Function to generate responses
-def generate_response(message):
-    if 'help' in message['content'].lower():
+def generate_response(user_message, channel_name):
+    if channel_name.lower() == 'forum':
+        bot_response = generate_forum_response(user_message['content'])
         return {
-            'content': 'How can I assist you with your studies?',
-            'sender': 'System',
-            'timestamp': datetime.datetime.now().isoformat(),
+            'content': bot_response,
+            'sender': 'Bot',
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
         }
-    return None
-    """
-def read_diary_entries(file, user):
-    """read and return diary entries for a specific user."""
-    if not os.path.exists(file):
-        return {user: {"entries": {}, "current_question": 0}}
-
-    try:
-        with open(file, 'r') as f:
-            data = json.load(f)
-    except (FileNotFoundError, json.decoder.JSONDecodeError):
-        data = {}
-
-    # Ensure the user has an entry space
-    if user not in data:
-        data[user] = {
-            "entries": {},
-            "current_question": 0
+    elif channel_name.lower() == 'diary':
+        bot_response = generate_diary_response(user_message['sender'], user_message['content'])
+        return {
+            'content': bot_response,
+            'sender': 'Bot',
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
+            'extra': None
         }
-
-    return data
-
-def save_diary_entries(file, data):
-    """save diary entries to a JSON file"""
-    with open(file, 'w') as f:
-        json.dump(data, f, indent=4)
-
-
-# filter out inappropriate messages
-def filter_message(message):
-    unwanted_words = ['spam', 'advertisement']
-    for word in unwanted_words:
-        if word in message['content'].lower():
-            return False
-    return True
-
-def profanity_filter(message):
-    url = "https://api.apilayer.com/bad_words?censor_character=censor_character"
-    headers= {
-        "apikey": "X22UMxBBcyIhaFPXWXDm9PH2ZxUCwqXV"
-    }
-
-    payload = message['content'].encode("utf-8")
-    response = requests.post(url, headers=headers, data=payload)
-    #response= requests.request("POST", url, headers=headers, data = payload)
+    else:
+        return None
     
-    if response.status_code != 200:
-        print("error from api")
-        return False
+def generate_diary_response(user, user_message):
+    pass
+
+def generate_forum_response(user_message):
+    """
+    Uses the OpenAI ChatCompletion API to generate a travel advice response.
+    The response is conversational but may not ask follow-up questions.
+    If the user's message does not appear to be related to travel or places, 
+    the bot should respond with: 
+    "This channel is exclusively for travel tips. Please ask a travel-related question."
+    """
     
-    result = response.json()
-    return result.get("bad_words_total",0) > 0 #returns true if bad word was found
+    system_prompt = (
+        "You are a knowledgeable travel assistant. Provide detailed travel advice, including attractions, tips and tricks, pros and cons of destinations, and restaurant recommendations. "
+        "Respond conversationally but do not ask follow-up questions. "
+        "Please answer in detail with at least three complete sentences."
+        "Make sure your answers always have a logical conclusion."
+        "Make sure that your answer only contains full sentences and ends with a period."
+        "If the user's message does not appear to be related to travel or places, respond with: "
+        "'This channel is only for travel tips. Please ask a travel-related question.'"
+        )
+    
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_message}
+    ]
+    
+    # Fallback if no API key is set (for testing)
+    if not client.api_key:
+        return "This is a dummy travel response, since you did not provide an OpenAI API key. Remember to always check local reviews and ask locals for the best tips."
+    
+    try:
+        response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=messages,
+                max_tokens=200,
+                temperature=0.7
+            )
+        reply = response.choices[0].message.content
+        return reply
+    except Exception as e:
+        # Drucke den kompletten Fehler in der Konsole, damit du ihn sehen kannst
+        print("Error generating travel response:", e)
+        return f"Sorry, I couldn't generate a travel response at the moment. Error: {e}"
 
 @app.cli.command('register')
 def register_command():
@@ -216,30 +222,15 @@ def home_page(channel_name):
         return "Channel not found", 404
     if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
-    
+    # load only messages from certain day if date_filter is active
     messages = read_messages(channel['file'], channel['welcome_message'])
-    if channel_name.lower() == "forum":
-        return jsonify(messages)
-    
-    
-    elif channel_name.lower() == 'diary': 
-        user = request.args.get("user", None)
-        #print('user')
-        if not user:
-            return "User not specified (channel.py)", 400
-        data = read_diary_entries(channel['file'], user)
-        #channel_obj = get_channel_config(channel_name)
-        
-        return render_template(
-            "channel.html",
-            channel = channel,
-            channel_name=channel_name,
-            messages=data[user]["entries"],
-            user=user
-        )
-    
-        #return render_template("channel.html", channel_name = channel_name, messages=data[user]["entries"], user = user, channel=channel_obj)
-                    
+    try: 
+        date_filter = request.args.get('date', None)
+        if date_filter:
+            messages = [m for m in messages if m['timestamp'].startswith(date_filter)]
+    except:
+        pass
+    return jsonify(messages)
 
 # POST: Send a message
 @app.route('/<channel_name>/', methods=['POST'])
@@ -251,99 +242,51 @@ def send_message(channel_name):
     # check authorization header
     if not check_authorization(request, channel['authkey']):
         return "Invalid authorization", 400
-    
-    if request.form:  # Handling form submission from HTML
-        sender = request.form.get("sender")
-        content = request.form.get("content")
-        timestamp = datetime.datetime.now().isoformat()
-
-        if not message:
-            return "No message", 400
-        if not 'content' in message:
-            return "No content", 400
-        if not 'sender' in message:
-            return "No sender", 400
-        if not 'timestamp' in message:
-            return "No timestamp", 400
-        
-        message={
-            "content": content,
-            "sender": sender,
-            "timestamp": timestamp
-        }
-
-    else:   
     # check if message is present
-        message = request.json
+    message = request.json
+    if not message:
+        return "No message", 400
+    if not 'content' in message:
+        return "No content", 400
+    if not 'sender' in message:
+        return "No sender", 400
+    if not 'timestamp' in message:
+        return "No timestamp", 400
+    
+    extra = 'bot_reply' # message.get('extra', None)
+    if 'bot_reply' in request.form:
+        extra = 'bot_reply'
+        print("bot reply :)")
 
-        if not message or 'content' not in message or 'sender' not in message:
-            return "Invalid JSON data", 400
-    
-    extra = message.get('extra', None)
-    
-    # save what the user entereed for 'sender' as 'user'
-    user = message ['sender']
-    today = datetime.datetime.now().strftime("%Y-%m-%d")
-    
-    #check for bad words with profanity filter
+    # load previous messages    
+    messages = read_messages(channel['file'], channel['welcome_message'])
+    # filter out system messages
+    messages = [m for m in messages if m['sender'] != 'System']
+    # check for inappropriate content 
     if profanity_filter(message):
-        return "Message contains inappropriate content",400
-    
-    # send messages for forum channel
-    if channel_name.lower() == 'forum':
-        # add message to messages
-        messages = read_messages(channel['file'], channel['welcome_message'])
-        # but check for inappropriate content first 
-        #check for bad words with profanity filter
-        if profanity_filter(message):
-            system_message = {
-                'content': 'Your message contained inappropriate content and was not posted.',
-                'sender': 'System',
-                'timestamp': datetime.datetime.now().isoformat(),
-                'extra': None
-            }
-            messages.append(system_message)
-        else:
-            messages.append({'content': message['content'],
-                        'sender': message['sender'],
-                        'timestamp': message['timestamp'],
-                        'extra': extra,
-                        })
-        if len(messages) > MAX_MESSAGES:
-            messages = messages[-MAX_MESSAGES:]
-        save_messages(channel['file'], messages)
-        return "OK", 200
-    
-    elif channel_name.lower() == 'diary': 
-        data = read_diary_entries(channel['file'], user)
-
-        #create an entry if there hasn't been one today
-        if today not in data[user]["entries"]:
-            data[user]["entries"][today] = []
-
-        current_question_index = data[user]["current_question"]
-
-        if current_question_index >= len(DAILY_QUESTIONS):
-            return jsonify({"content": "You have completed today's diary!"}), 200
-        
-        # Store the answer
-        data[user]["entries"][today].append({
-            "question": DAILY_QUESTIONS[current_question_index],
-            "answer": message['content'],
-            "timestamp": message.get('timestamp', datetime.datetime.now().isoformat())
-        })
-
-        # Move to next question
-        data[user]["current_question"] += 1
-        save_diary_entries(channel['file'], data)
-
-        # Provide next question or completion message
-        if data[user]["current_question"] < len(DAILY_QUESTIONS):
-            next_question = DAILY_QUESTIONS[data[user]["current_question"]]
-            return jsonify({"content": next_question}), 200
-        else:
-            return jsonify({"content": "You have completed today's diary!"}), 200
-    return redirect(url_for('home_page', channel_name=channel_name))
+        system_message = {
+            'content': 'Your message contained inappropriate content and was not posted.',
+            'sender': 'System',
+            'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
+            'extra': None
+        }
+        messages.append(system_message)
+    else:
+        messages.append({'content': message['content'],
+                     'sender': message['sender'],
+                     'timestamp': message['timestamp'],
+                     'extra': extra,
+                     })
+        if extra == 'bot_reply' and channel_name == 'forum':
+            response = generate_response(message, channel_name)
+            if response:
+                messages.append(response)
+    # check if messages exceed limit
+    if len(messages) > MAX_MESSAGES:
+        messages = messages[-MAX_MESSAGES:]
+    # now save message to messages file
+    save_messages(channel['file'], messages)
+    return "OK", 200
 
 def read_messages(file, welcome_message):
     try:
@@ -358,12 +301,6 @@ def read_messages(file, welcome_message):
 def save_messages(file, messages):
     with open(file, 'w') as f:
         json.dump(messages, f)
-
-
-
-# Start development web server
-# run flask --app channel.py register
-# to register channel with hub
 
 if __name__ == '__main__':
     app.run(port=5001, debug=True)

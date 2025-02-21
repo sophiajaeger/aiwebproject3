@@ -1,76 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
-        <title>Channel {{channel_name}} </title> <!-- title displayed in the browser tab -->
-        <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
-        <style>
-            body {
-                display: flex;
-                flex-direction: column;
-                min-height: 100vh;
-                margin: 0;
-                height: 100%;
-                font-family: Arial, sans-serif;
-                color: #121c25;
-                bottom: 0;
-            }
-    
-            .header {
-                position: sticky;
-                top: 0;
-                height: 6vh;
-                width: 100%;
-                margin: 0;
-                padding: 10px;
-                background-color: #4C5E64;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: left;
-                z-index: 1000;
-                overflow:hidden;
-            }
-    
-            .header h2 {
-                font-size: 2rem;
-                margin: 0;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-            }
-    
-            .header img {
-                width: 60px;
-                height: 60px;
-                margin-right: 10px;
-            }
-    
-            .footer {
-                position: sticky;
-                bottom: 0;
-                height: 4vh;
-                width: 100%;
-                margin: 0;
-                padding: 10px;
-                background-color: #4C5E64;
-                color: white;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                margin-top: auto;
-            }
-
-            .footer a{
-                color: white;
-            }
-       
-            .footer a:hover {
-                text-decoration: underline;
-            }
-        </style>
-    </head>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
+    <title>Channel {{ channel.name }} </title> <!-- title displayed in the browser tab -->
+    <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
 <body>
     <div class="header" id="myHeader">
         <h2>
@@ -78,31 +14,143 @@
             AdventureAtlas
         </h2>
     </div>
+    <div class="content">
+        <div class="sidebar">
+            <h2><br>Navigation</h2>
+            <a href="{{ url_for('home_page') }}">Home</a>
+            {% for channel in channels %}
+                <a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a>
+            {% endfor %}
+        </div>
 
-{% if channel %}
-    <h1>Channel {{ channel.name }}</h1>
+        <div id="react-root"></div>
+        </div>
 
-        {% for message in messages %}
-            <h2>{{ message.sender }}</h2>
-            <p>{{ message.content }}</p>
-            <p style="font-size: 60%">{{ message.timestamp }}</p>
-        {% endfor %}
-{% else %}
-    <h1>Channel not found</h1>
-{% endif %}
+        <div class="footer">
+            <h2>
+                <!--link to go back to the home page-->
+                <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+            </h2>
+        </div>
 
-<form action="post" method="post">
-    <input type="hidden" name="channel" value="{{ channel.endpoint | urlencode }}">
-    Sender: <input type="text" name="sender" id="sender"> <br>
-    Message: <input type="text" name="content" id="content"> <br>
-    <input type="submit" value="Post">
-</form>
+        <!-- Pass channel data from Flask to JavaScript -->
+        <script>
+            var channelEndpoint = "{{ channel.endpoint|safe}}";
+            var channelName = "{{ channel.name }}";
+            var channelAuthkey = "";
+            if (channelName === "Forum") {
+                channelAuthkey = "0987654320";
+            } else if (channelName === "Diary") {
+                channelAuthkey = "0987654323";
+            }
+        </script>
 
-<div class = "footer">
-    <h2>
-        <!--link to go back to the search engine-->
-        <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
-    </h2>
-</div>
+        <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+        <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+        
+        <script type="text/babel">
+        
+            function ChannelApp(){
+                const[messages, setMessages] = React.useState([]);
+                const[sender, setSender] = React.useState("");
+                const[content, setContent] = React.useState("");
+
+                //fetch new messages
+                
+                const fetchMessages = async () => {
+                    try {
+                        const response = await fetch (channelEndpoint, {
+                            method: 'GET',
+                            headers: {
+                                'Authorization': `authkey ${channelAuthkey}`
+                            }
+                        });
+                        const data = await response.json();
+                        console.log("Fetched messages:", data)
+
+                        //adjust maybe
+                        setMessages([...data]);
+                    } catch (error) {
+                        console.error("Error fetching messages:", error);
+                    }
+                };
+
+                React.useEffect(() => {
+                    fetchMessages(); // initial load
+                    const interval = setInterval(fetchMessages, 10000); //Polling every 10 sec
+                    return () => clearInterval(interval);
+                }, []);
+
+                
+                // Handle form submission with fetch() to send messages in the background
+                const handleSubmit = async (e) => {
+                    e.preventDefault();
+                    try {
+                        const response = await fetch(channelEndpoint,{
+                            method: 'POST', 
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `authkey ${channelAuthkey}`
+                            },
+                            body: JSON.stringify({ sender, content, timestamp: new Date().toISOString() })    
+                        });
+
+                        const result = await response.json();
+                        console.log(result);
+                        // Clear inputs after successful send
+                        setSender("");
+                        setContent("");
+                        
+                    } catch(error) {
+                        console.error("Error sending messages", error);
+                    }
+            };
+
+            return(
+                <div>
+                    <h1>Channel {channelName}</h1>
+                    <div id="messages">
+                        {messages.map((msg, index) => (
+                            <div key={index} className="message">
+                                <h2>{msg.sender}</h2>
+                                <p className="content">{msg.content}</p>
+                                <p className="timestamp">{msg.timestamp}</p>
+                            </div>
+                        ))}
+                    </div>
+                    <form id="message-form" onSubmit={handleSubmit} className="message-form">
+                        <input type="hidden" name="channel" value={channelEndpoint} />
+                        <label htmlFor="sender">Sender:</label>
+                        <input
+                            type="text"
+                            name="sender"
+                            id="sender"
+                            value={sender}
+                            onChange={(e) => setSender(e.target.value)}
+                            required
+                        />
+
+                        <label htmlFor="content">Message:</label>
+                        <input
+                            type="text"
+                            name="content"
+                            id="content"
+                            value={content}
+                            onChange={(e) => setContent(e.target.value)}
+                            required
+                        />
+                    <input type="submit" value="Post" />
+                </form>
+            </div>
+        );
+    
+    }
+
+    // Render the React component into the designated root div
+    ReactDOM.render(<ChannelApp />, document.getElementById('react-root'));
+
+    </script>
+
 </body>
 </html>

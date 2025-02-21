@@ -36,6 +36,8 @@ def home_page():
 
 @app.route('/show')
 def show_channel():
+    #i used the version from the deployment branch for the show_channel method, the rest of the code is from the react-client branch
+    """
     # fetch list of messages from channel
     show_channel = request.args.get('channel', None)
     user = request.args.get('user', None)
@@ -54,8 +56,26 @@ def show_channel():
     if response.status_code != 200:
         return "Error fetching messages: "+str(response.text), 400
     messages = response.json()
-    return render_template("channel.html", channel=channel, messages=messages, user = user)
-
+    return render_template("channel.html", channels=update_channels(), channel=channel, messages=messages)
+    """
+    
+    # fetch list of messages from channel
+    show_channel = request.args.get('channel', None)
+    if not show_channel:
+        return "No channel specified", 400
+    channel = None
+    for c in update_channels():
+        if c['endpoint'] == urllib.parse.unquote(show_channel):
+            channel = c
+            break
+    if not channel:
+        return "Channel not found", 404
+    response = requests.get(channel['endpoint'], headers={'Authorization': 'authkey ' + channel['authkey']})
+    if response.status_code != 200:
+        return "Error fetching messages: "+str(response.text), 400
+    messages = response.json()
+    return render_template("channel.html", channels=update_channels(), channel=channel, messages=messages)
+    
 @app.route('/post', methods=['POST'])
 def post_message():
     # send message to channel
@@ -71,7 +91,7 @@ def post_message():
         return "Channel not found", 404
     message_content = request.form['content']
     message_sender = request.form['sender']
-    message_timestamp = datetime.datetime.now().isoformat()
+    message_timestamp = datetime.datetime.now().isoformat(" ", "seconds")
     response = requests.post(channel['endpoint'],
                              headers={'Authorization': 'authkey ' + channel['authkey']},
                              json={'content': message_content, 'sender': message_sender, 'timestamp': message_timestamp})

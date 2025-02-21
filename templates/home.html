@@ -3,80 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
-    <title>AdventureAtlas</title> <!-- title displayed in the browser tab -->
+    <title>AdventureAtlas</title> 
     <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            margin: 0;
-            height: 100%;
-            font-family: Arial, sans-serif;
-            background-color: #20263F;
-            background: url("{{ url_for('static', filename='images/background_results.jpg') }}") no-repeat center center fixed;
-            background-size: cover;
-            background-blend-mode: darken;
-            color: #121c25;
-        }
-
-        .header {
-            position: sticky;
-            top: 0;
-            height: 6vh;
-            width: 100%;
-            margin: 0;
-            padding: 10px;
-            background-color: #4C5E64;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: left;
-            z-index: 1000;
-        }
-
-        .header h2 {
-            font-size: 2rem;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .header img {
-            width: 60px;
-            height: 60px;
-            margin-right: 10px;
-        }
-
-        .footer {
-            position: sticky;
-            bottom: 0;
-            height: 4vh;
-            width: 100%;
-            margin: 0;
-            padding: 10px;
-            background-color: #4C5E64;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-top: auto;
-        }
-
-        .footer a {
-            font-size: 1.2rem;
-            color: #4C5E64;
-            text-decoration: none;
-            margin-left: 10px;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <div class="header" id="myHeader">
@@ -85,20 +14,54 @@
             AdventureAtlas
         </h2>
     </div>
-    <h3>Greetings adventurers, <br>
-        at AdventureAtlas, we connect stories and travel tips to inspire your next big journey. <br> Let’s discover the world together!</h3>
-    <h1>List of message channels</h1>
-
-    <ul>
-        {% for channel in channels %}
-            Guest = user
-            <li><a href="{{ url_for('show_channel') }}?channel={{ channel.endpoint | urlencode }}&user=Guest">{{ channel.name }}</a> (Type: {{ channel.type_of_service}})</li>
-        {% endfor %}
-    </ul>
-    <div class="footer">
-        <h2>
-            Back to Home
-        </h2>
+    <div class="main-content">
+        <div id="root"></div>
+        <div class="logo-title">
+            <img src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}" alt="AdventureAtlas Logo">
+            <h1>AdventureAtlas</h1>
+        </div>
+        <h3>Greetings Adventurers, </h3>
+        <h3>at AdventureAtlas, we connect stories <br> and travel tips to inspire your next big journey. <br> Let’s discover the world together! <br> </h3>
+        <h2>List of Message Channels:</h2>
+        <ul class="channel-list">
+            {% for channel in channels %}
+                <li><a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a></li>
+            {% endfor %}
+        </ul>
     </div>
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script type="text/babel">
+        function ChannelList() {
+            // React component that shows a channel list
+            // content is fetched from the university hub (works only on university network, use VPN)
+            //
+            const [channels, setChannels] = React.useState([]);
+
+            React.useEffect(() => {
+                // Fetch list of channels from local host
+                fetch("/channels") 
+                    .then(response => response.json())
+                    .then(data => setChannels(data.channels));
+            }, []);  // empty list here means that this effect will run only once (you can add a variable to run it on change)
+
+            return (
+                <div>
+                    <h2>Channel List</h2>
+                    <ul>
+                        {channels.map(channel => (
+                            <li key={channel.id}>
+                                {channel.name} (URL: {channel.endpoint}, Type: {channel.type_of_service})
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            );
+        }
+
+        // main code: render the ChannelList component, add more components here
+        
+    </script>
 </body>
 </html>
