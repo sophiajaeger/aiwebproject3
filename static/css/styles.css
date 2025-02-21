@@ -26,7 +26,7 @@ body {
     align-items: center;
     z-index: 1000;
     overflow: hidden;
-    justify-content: left;
+    justify-content: space-between;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -78,7 +78,6 @@ body {
     width: calc(100% - 200px);
     height: 100%;
     padding-left: 20px;
-
 }
 
 .content h1 {
@@ -129,6 +128,15 @@ body {
     margin-left: 75px;
     width: 75%;
     box-shadow: 0 5px 7px rgba(0, 0, 0, 0.1);
+}
+
+.root {
+    width: 100%;
+    min-height: 100vh;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
 .message h2 {
@@ -265,4 +273,45 @@ body {
 
 .channel-list a:hover {
     text-decoration: underline;
+}
+
+.profile-tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    margin-right: 20px;
+    padding-right: 10px;
+}
+
+.profile-tab img {
+    width: 30px;
+    height: 30px;
+}
+
+.profile-dropdown {
+    display: none;
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background-color: white;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+.profile-dropdown a {
+    display: block;
+    padding: 10px;
+    color: #4C5E64;
+    text-decoration: none;
+}
+
+.profile-dropdown a:hover {
+    background-color: #f0f0f0;
+}
+
+.profile-tab:hover .profile-dropdown {
+    display: block;
 }

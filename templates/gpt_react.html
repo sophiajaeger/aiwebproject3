@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Travel Forum & Diary</title>
+    <!-- Link to your external CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}" />
+  </head>
+  <body>
+    <!-- Our single-page app root -->
+    <div id="root" class="root"></div>
+
+    <!-- React, ReactDOM and Babel scripts -->
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+    <!-- Our React Client -->
+    <script type="text/babel">
+      // Main App component
+      function App() {
+        // Retrieve the username from localStorage if available.
+        const [username, setUsername] = React.useState(localStorage.getItem("username") || "");
+        // currentChannel can be "forum" or "diary" – default is "forum"
+        const [currentChannel, setCurrentChannel] = React.useState("forum");
+        const [messages, setMessages] = React.useState([]);
+        const [newMessage, setNewMessage] = React.useState("");
+
+        // Load messages when the channel changes or when username changes (to update diary view)
+        React.useEffect(() => {
+          loadMessages();
+        }, [currentChannel, username]);
+
+        // Fetch messages from the appropriate endpoint
+        const loadMessages = async () => {
+          // For development, we use a relative URL like "/forum/" or "/diary/"
+          // When deploying, change these endpoints to your university server URLs.
+          const endpoint = `/${currentChannel}/`;
+          try {
+            const response = await fetch(endpoint, {
+              headers: {
+                "Authorization": "authkey 0987654320" // Use the correct authkey as configured on your server
+              }
+            });
+            if (response.ok) {
+              const data = await response.json();
+              // For the diary view, show only messages by the current user
+              if (currentChannel === "diary" && username) {
+                setMessages(data.filter(msg => msg.sender === username));
+              } else {
+                setMessages(data);
+              }
+            } else {
+              console.error("Error loading messages:", response.statusText);
+            }
+          } catch (error) {
+            console.error("Error loading messages:", error);
+          }
+        };
+
+        // Handle posting a new message
+        const handlePostMessage = async (e) => {
+          e.preventDefault();
+          if (!username) {
+            alert("Please enter your name above.");
+            return;
+          }
+          const endpoint = `/${currentChannel}/`;
+          const messageData = {
+            sender: username,
+            content: newMessage,
+            timestamp: new Date().toISOString()
+          };
+          try {
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "Authorization": "authkey 0987654320"
+              },
+              body: JSON.stringify(messageData)
+            });
+            if (response.ok) {
+              // Reload messages after a successful post
+              loadMessages();
+              setNewMessage("");
+            } else {
+              console.error("Error posting message:", response.statusText);
+            }
+          } catch (error) {
+            console.error("Error posting message:", error);
+          }
+        };
+
+        // Save username in state and in localStorage
+        const handleUsernameChange = (e) => {
+          const name = e.target.value;
+          setUsername(name);
+          localStorage.setItem("username", name);
+        };
+
+        const handleLogout = () => {
+            setUsername("");
+            localStorage.removeItem("username");
+        }
+
+        return (
+          <div>
+            {/* Header: Site title and username input/display */}
+            <div className="header">
+              <h2>
+                <img 
+                  src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}"
+                  alt="AdventureAtlas Logo" 
+                />
+                AdventureAtlas
+              </h2>
+              <div className="profile-tab">
+                {username ? (
+                  <span>Hello, {username}</span>
+                ) : (
+                  <input 
+                    type="text" 
+                    placeholder="Enter your name" 
+                    value={username} 
+                    onChange={handleUsernameChange} 
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Sidebar: Navigation between Forum and Diary */}
+            <div className="sidebar">
+              <h2>Navigation</h2>
+              <a href="#" onClick={() => setCurrentChannel("forum")}>Forum</a>
+              <a href="#" onClick={() => setCurrentChannel("diary")}>Diary</a>
+            </div>
+
+            {/* Main Content Area */}
+            <div className="content">
+              <h1>
+                {currentChannel === "forum" ? "Travel Forum" : "My Travel Diary"}
+              </h1>
+              {currentChannel === "diary" && !username ? (
+                <p>Please enter your name in the header to view your diary entries.</p>
+              ) : (
+                <div id="messages">
+                  {messages.map((msg, index) => (
+                    <div key={index} className="message">
+                      <h2>{msg.sender}</h2>
+                      <p className="content">{msg.content}</p>
+                      <p className="timestamp">{msg.timestamp}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Message Form: disabled if diary view and no username */}
+              <form className="message-form" onSubmit={handlePostMessage}>
+                <label htmlFor="messageInput">Message:</label>
+                <input 
+                  type="text" 
+                  id="messageInput" 
+                  value={newMessage} 
+                  onChange={(e) => setNewMessage(e.target.value)} 
+                  required 
+                  disabled={currentChannel === "diary" && !username}
+                />
+                <input 
+                  type="submit" 
+                  value="Post" 
+                  disabled={currentChannel === "diary" && !username}
+                />
+                {currentChannel === "diary" && !username && (
+                  <p>Please enter your name to post diary entries.</p>
+                )}
+              </form>
+            </div>
+
+            {/* Footer */}
+            <div className="footer">
+              <h2>
+                <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+              </h2>
+            </div>
+          </div>
+        );
+      }
+
+      // Render the App into the root div
+      ReactDOM.render(<App />, document.getElementById("root"));
+    </script>
+  </body>
+</html>

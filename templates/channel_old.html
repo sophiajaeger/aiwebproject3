@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
+    <title>Channel {{ channel.name }} </title> <!-- title displayed in the browser tab -->
+    <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="header" id="myHeader">
+        <h2>
+            <img src="{{ url_for('static', filename='images/logo_adventureatlas.png') }}" alt="AdventureAtlas Logo">
+            AdventureAtlas
+        </h2>
+        <div class="profile-tab">
+            <div id="login_root"></div>
+            <img src="{{url_for('static', filename='images/profile-icon-white.png')}}" alt="Profile Icon">
+        </div>
+    </div>
+    <div class="content">
+        <div class="sidebar">
+            <h2><br>Navigation</h2>
+            <a href="{{ url_for('home_page') }}">Home</a>
+            {% for channel in channels %}
+                <a href="{{ url_for('show_channel', channel=channel.endpoint | urlencode) }}">{{ channel.name }}</a>
+            {% endfor %}
+        </div>
+        {% if channel %}
+            <h1>Channel {{ channel.name }}</h1>
+            <p><br></p>
+            <div id="messages">
+                {% for message in messages %}
+                    <div class="message">
+                        <h2>{{ message.sender }}</h2>
+                        <p class="content">{{ message.content }}</p>
+                        <!--show timestamp in form YYYY-MM-DD HH:MM:SS-->
+                        <p class="timestamp">{{ message.timestamp }}</p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h1>Channel not found</h1>
+        {% endif %}
+
+        <form id="message-form" class="message-form" action="post" method="post"> <!-- still need to change action so it doesnt send the whole page -->
+            <input type="hidden" name="channel" value="{{ channel.endpoint | urlencode }}">
+            <label for="sender">Sender:</label>
+            <input type="text" name="sender" id="sender" required>
+            <label for="content">Message:</label>
+            <input type="text" name="content" id="content" required>
+            <input type="submit" value="Post">
+        </form>
+    </div>
+
+    <div class="footer">
+        <h2>
+            <!--link to go back to the home page-->
+            <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+        </h2>
+    </div>
+
+    <script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+    <script>
+        window.onload = scrollToBottom();
+
+        // automtically scroll when sending a message
+        document.getElementById("message-form").addEventListener("submit", function() {
+            setTimeout(scrollToBottom, 100); // Leichte Verzögerung, um sicherzustellen, dass die Nachricht geladen wird
+        });
+
+        // Function to scroll to the bottom of the messages
+        function scrollToBottom() {
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    </script>
+    <script type="text/babel"> 
+        const [username, setUserName] = React.useState();
+        const [password, setPassword] = React.useState();
+    </script>
+
+</body>
+</html>
