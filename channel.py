@@ -9,10 +9,8 @@ import os
 # Load environment variables from the .env file
 load_dotenv()
 
-
 # Set the OpenAI API key from the environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -26,15 +24,18 @@ app = Flask(__name__)
 app.config.from_object(__name__ + '.ConfigClass')  # configuration
 app.app_context().push()  # create an app context before initializing db
 
-HUB_URL = 'http://localhost:5555'
-HUB_AUTHKEY = '1234567890'
+# HUB_URL = 'http://localhost:5555'
+# HUB_AUTHKEY = '1234567890'
+
+HUB_AUTHKEY = 'Crr-K24d-2N'
+HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub"
 
 CHANNELS = [
     {
         'name': 'Forum',
         'authkey': '0987654320',
-        'endpoint': 'http://localhost:5001/forum',
-        'file': 'forum_messages.json',
+        'endpoint': 'http://vm322.rz.uni-osnabrueck.de/u006/aiwebproject3/channel.wsgi/',
+	'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
             'content': ('Welcome to the Travel Forum! This channel is only for travel tips and advice. '
