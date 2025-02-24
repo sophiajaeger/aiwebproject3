@@ -196,6 +196,12 @@ body {
     background-color: #3b4a52;
 }
 
+.message-form input[type="submit"]:disabled {
+    background-color: #ccc;
+    color: #666;
+    cursor: not-allowed;
+}
+
 .message-form label {
     display: block;
     margin: 5px 0;

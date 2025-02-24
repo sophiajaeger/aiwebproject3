@@ -61,10 +61,13 @@
             };
 
             React.useEffect(() => {
-                fetchMessages(); // initial load
-                const interval = setInterval(fetchMessages, 10000); //Polling every 10 sec
-                return () => clearInterval(interval);
-            }, [currentChannel]);
+                // if there is a channel selected, fetch the messages every 10 seconds or when a message is submitted
+                if (currentChannel) {
+                    fetchMessages(); // initial load
+                    const interval = setInterval(fetchMessages, 10000); //Polling every 10 sec
+                    return () => clearInterval(interval);
+                }
+            }, [currentChannel]); 
 
             // Handle form submission with fetch() to send messages in the background
             const handleSubmit = async (e) => {
@@ -170,10 +173,14 @@
                                 onChange={(e) => setContent(e.target.value)}
                                 required
                             />
-                            <input type="submit" value="Post" disabled={!username}/>
+                            <input type="submit" value="Post" disabled={!username || !currentChannel}/>
                             {!username && (
                             <p>Please enter your name above to post a message.</p>
                             )}
+                            {!currentChannel && (
+                            <p>Please select a channel from the sidebar to post a message.</p>
+                            )
+                            }
                         </form>
                     </div>
 
