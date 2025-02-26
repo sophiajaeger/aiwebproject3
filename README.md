@@ -1,20 +1,20 @@
 # AIWebProject3
 ## Name
-Adventurers Forum - Your AI-Powered Travel Companion
+AdventureAtlas Forum - Your AI-Powered Travel Companion
 
 ## Description
-Adventurers Forum is an interactive and AI-powered distributed message board designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely.
+AdventureAtlas Forum is an interactive and AI-powered distributed message board designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely. (eventuell auch ändern wenn nur bot antwort)
+Additionally, we developed an independent Java client that can connect to and interact with all available channels on the shared university server, providing a unified experience across different discussion topics
 
 ### Features
 - Channel-based Messaging: Users can switch between different channels without reloading the page.
 - Java Client Compatibility: Developed a Java client that works with our own channel and all other channels deployed on the shared university server.
 - Login & Logout System: Authentication system integrated in the heade
 - AI-Powered Responses: Utilizes OpenAI API to generate travel-related replies.
-- Toggle AI Responses: Users can enable or disable AI-generated responses, allowing either AI-assisted replies or free chat.
+- Users can enable or disable AI-generated responses, allowing either AI-assisted replies or free chat. (eventuell raus nehmen)
 - Inappropriate Content Filtering: Implements a filter API to remove offensive or irrelevant content.
 - Message Limitation: A maximum of 150 messages is retained to optimize performance.
 - System Messages: Displayed only until the next message is sent.
-- Bot Toggle Feature: Users can enable or disable AI-generated replies.
 
 ### Purpose
 The project was developed as part of the course "Artificial Intelligence and the Web" by Cognitive Science Students at the University of Osnabrück.
@@ -24,7 +24,6 @@ The project was developed as part of the course "Artificial Intelligence and the
 - Python Version: 3.9 or higher
 - Operating System: Windows, macOS, Linux
 - Java Development Kit (JDK): Required for Java client
-- Node.js and npm/yarn (for React client)
 
 ### Dependencies
 Install required packages via requirements.txt:
@@ -34,8 +33,10 @@ pip install -r requirements.txt
 
 Dependencies:
 - Flask
+- Flask-SQLAlchemy
 - Requests
-- OpenAI API
+- OpenAI
+- Python-Dotenv
 - Java (for multi-channel compatibility)
 - React
 - Filtering API (for content moderation)
@@ -69,6 +70,9 @@ Dependencies:
 
 ... muss noch hinzugefügt werden
 
+6. Run the Java Client:
+... muss noch hinzugefügt werden
+
 ## Support
 For issues or inquiries, please contact:
 Email:
@@ -89,7 +93,7 @@ When creating an issue, include:
 - Enhanced Java Client: Improved UI and additional functionalities for better multi-channel interaction.
 
 ## Contributing
-If you would like to contribute your own ideas, you are welcome to improve and expand BrainBite! Just follow the guideline:
+If you would like to contribute your own ideas, you are welcome to improve and expand AdvetureAtlas! Just follow the guideline:
 1. Fork the repository
     - click the "Fork" button at the top right side of this repository to copy
 2. Clone the Forked Repository
@@ -124,7 +128,7 @@ If you would like to contribute your own ideas, you are welcome to improve and e
     ```
     git push
     ```
-8. Submit a Pull Request for to propose changes to   the main project
+8. Submit a Pull Request for to propose changes to the main project
     - a bunner will appear in your repository indicating that your branch is one commit before octocat:main
     - click Contribute and then Open a Pull Request
     - click on Pull Request -> include a clear description of your changes
