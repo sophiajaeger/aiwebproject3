@@ -3,7 +3,7 @@
 AdventureAtlas Forum - Your AI-Powered Travel Companion
 
 ## Description
-AdventureAtlas Forum is an interactive and AI-powered distributed message board designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely. (eventuell auch ändern wenn nur bot antwort)
+AdventureAtlas Forum is an interactive and AI-powered distributed message channel designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely. (eventuell auch ändern wenn nur bot antwort)
 
 Additionally, we developed an independent Java client that can connect to and interact with all available channels on the shared university server, providing a unified experience across different discussion topics
 
