@@ -49,10 +49,10 @@
 
             return (
                 <div>
-                    <ul class="channel-list">
+                    <ul>
                         {channels.map(channel => (
                             <li key={channel.endpoint}>
-                                <a href="{{url_for('channels')}}">{channel.name}</a>
+                                <a href="">{channel.name}</a>
                             </li>
                         ))}
                     </ul>

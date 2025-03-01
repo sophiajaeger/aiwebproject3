@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- format for different screen sizes -->
-    <title>AdventureAtlas</title> 
+    <title>AdventureAtlas</title> <!-- title displayed in the browser tab -->
     <link rel="icon" type="image" href="{{ url_for('static', filename='images/logo_adventureatlas.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
@@ -23,20 +23,12 @@
         //const HUB_URL = 'http://localhost:5555'
         
         function ChannelApp(){
+            const[sender, setSender] = React.useState("");
             const[content, setContent] = React.useState("");
             const [username, setUsername] = React.useState(localStorage.getItem("username") || "");
             const [messages, setMessages] = React.useState([]);
             const [newMessage, setNewMessage] = React.useState("");
             const [channels, setChannels] = React.useState([]);
-	    const [disableBotReply, setDisableBotReply] = React.useState(false);
-
-	    const scrollToBottom = () => {
-        	window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-	    };
-
-	    const scrollToTop = () => {
-        	window.scrollTo({ top: 0, behavior: "smooth" });
-	    };
 
             React.useEffect(() => {
                 // Fetch list of channels from HUB_URL
@@ -47,6 +39,7 @@
                     .then(data => setChannels(data.channels));
             }, []);
 
+            // create a variable 'currentChannel' with a setfucntion and if there is a channel named forum in the channels list, set it as the current channel
             const [currentChannel, setCurrentChannel] = React.useState("");
             
             const fetchMessages = async () => {
@@ -68,57 +61,36 @@
             };
 
             React.useEffect(() => {
-                fetchMessages(); 
+                fetchMessages(); // initial load
                 const interval = setInterval(fetchMessages, 10000); //Polling every 10 sec
                 return () => clearInterval(interval);
             }, [currentChannel]);
 
-	    // scroll to bottom when the current channel changes
-	    React.useEffect(() => {
-        	scrollToBottom();
-	    }, [currentChannel]);
-
-	    // also scroll on initial page load
-	    React.useEffect(() => {
-        	scrollToBottom();
-	    }, []);
-
-            // handle form submission to send messages in the background
+            // Handle form submission with fetch() to send messages in the background
             const handleSubmit = async (e) => {
-	        e.preventDefault();
-        	if (!currentChannel || !currentChannel.endpoint) return;
+                e.preventDefault();
+                try {
+                    const response = await fetch(currentChannel.endpoint,{
+                        method: 'POST', 
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `authkey ${currentChannel.authkey}`
+                        },
+                        body: JSON.stringify({ sender, content, timestamp: new Date().toISOString() })    
+                    });
 
-	        // Build payload; include extra field only for AdventureAtlas channel
-        	const payload = {
-	            sender: username,
-        	    content,
-	            timestamp: new Date().toISOString()
-        	};
+                    // Clear inputs after successful send
+                    setSender("");
+                    setContent("");
+                    
+                } catch(error) {
+                    console.error("Error sending messages", error);
+                }
+            };
 
-	        if (currentChannel.name === "AdventureAtlas") {
-        	    // if disableBotReply is true, set extra to "no_bot_reply", otherwise use "bot_reply"
-	            payload.extra = disableBotReply ? "no_bot_reply" : "bot_reply";
-        	}
-        
-	        try {
-        	    await fetch(currentChannel.endpoint, {
-                	method: 'POST', 
-	                headers: {
-        	            'Content-Type': 'application/json',
-                	    'Authorization': `authkey ${currentChannel.authkey}`
-	                },
-        	        body: JSON.stringify(payload)    
-	            });
-        	    setContent("");
-		    scrollToBottom();
-	        } catch(error) {
-        	    console.error("Error sending messages", error);
-	        }
-	    };
-
-            
             const handleUsernameChange = (name) => {
                 setUsername(name);
+                setSender(name);
                 localStorage.setItem("username", name);
                 };
 
@@ -161,9 +133,6 @@
                     <div className="sidebar">
                         <h2>Navigation</h2>
                         <ul>
-				<li>
-                                    <a href={HUB_URL}>Public Hub</a>
-                                </li>
                             {channels.map(channel => (
                                 <li key={channel.endpoint}>
                                     <span 
@@ -173,11 +142,8 @@
                                 </li>
                             ))}
                         </ul>
-			<br/>
-			<br/>
-			<br/> 
-			<br/>
-                   </div>
+			<br> <br>
+                    </div>
 
                     <div class="content">
                         <h1>{currentChannel.name}</h1>
@@ -193,6 +159,9 @@
                         </div>
 
                         <form id="message-form" onSubmit={handleSubmit} className="message-form">
+                            {username && (
+                            <input type="hidden" name="sender" value={username} />
+                            )}
                             <label htmlFor="content">Message:</label>
                             <input
                                 type="text"
@@ -202,32 +171,17 @@
                                 onChange={(e) => setContent(e.target.value)}
                                 required
                             />
-
-			    {/* NEW: Show checkbox only if channel is AdventureAtlas */}
-	                    {currentChannel.name === "AdventureAtlas" && (
-                        	<label>
-                	            <input 
-        	                        type="checkbox" 
-	                                checked={disableBotReply} 
-                                	onChange={(e) => setDisableBotReply(e.target.checked)} 
-                        	    />
-                	            Disable the automatic bot reply
-        	                </label>
-	                    )}
-        
-	                    <input type="submit" value="Post" disabled={!username}/>
+                            <input type="submit" value="Post" disabled={!username}/>
                             {!username && (
-                                <p>Please enter your name above to post a message.</p>
+                            <p>Please enter your name above to post a message.</p>
                             )}
                         </form>
                     </div>
 
                     <div className="footer">
-			<button type="button" onClick={scrollToTop}>↑ Scroll to Top</button>	                             
-	   	        <h2>
-        	            <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
-                        </h2>
-			<button type="button" onClick={scrollToBottom}>↓ Scroll to Bottom</button>
+                    <h2>
+                        <a href="{{ url_for('home_page') }}">Back to List of Channels</a>
+                    </h2>
                     </div>
                 </div>
             );

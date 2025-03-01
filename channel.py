@@ -1,4 +1,5 @@
 from flask import Flask, request, render_template, jsonify
+from flask_cors import CORS # enable the React client to access the API
 import json
 import requests
 import datetime
@@ -10,7 +11,7 @@ import os
 load_dotenv()
 
 # Set the OpenAI API key from the environment variable
-openai.api_key = os.getenv("OPENAI_API_KEY")
+CLIENT = openai.OpenAI(api_key= os.getenv("OPENAI_API_KEY"))
 
 # Class-based application configuration
 class ConfigClass(object):
@@ -23,41 +24,34 @@ class ConfigClass(object):
 app = Flask(__name__)
 app.config.from_object(__name__ + '.ConfigClass')  # configuration
 app.app_context().push()  # create an app context before initializing db
+CORS(app) # enable CORS for all routes
 
 # HUB_URL = 'http://localhost:5555'
 # HUB_AUTHKEY = '1234567890'
 
 HUB_AUTHKEY = 'Crr-K24d-2N'
-HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub"
+HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub/"
 
 CHANNELS = [
     {
-        'name': 'Forum',
+        'name': 'AdventureAtlas',
         'authkey': '0987654320',
-        'endpoint': 'http://vm322.rz.uni-osnabrueck.de/u006/aiwebproject3/channel.wsgi/',
+        'endpoint': 'http://vm322.rz.uni-osnabrueck.de/u006/aiwebproject3/channel.wsgi/adventureatlas/',
 	'file': 'forum_messages.json',
         'type_of_service': 'aiweb24:chat',
         'welcome_message': {
-            'content': ('Welcome to the Travel Forum! This channel is only for travel tips and advice. '
-                        'Feel free to ask about countries, continents, cities, attractions, restaurants and everything else what comes in your mind when you think about your next Trip.'), 
-            'sender': 'System',
+            'content': ('Welcome to AdventureAtlas, a forum for travel tips and advice. '
+                        'Feel free to ask about countries, continents, cities, attractions, restaurants and everything else that comes to mind when planning your next trip. Please only post travel related inquiries, all unrelated messages and those containing inappropriate content will be filtered out.'), 
+            'sender': 'Welcome',
             'timestamp': datetime.datetime.now().isoformat(),
             'extra': None
         }
     }
 ]
 
-MAX_MESSAGES = 150  # Limit to 150 messages
+MAX_MESSAGES = 150
 
 # filter out inappropriate messages
-def filter_message(message):
-    unwanted_words = ['spam', 'advertisement']
-    for word in unwanted_words:
-        if word in message['content'].lower():
-            return False
-    return True
-
-
 def profanity_filter(message):
     """
     Checks if message content contains inappropriate words
@@ -70,7 +64,6 @@ def profanity_filter(message):
 
     payload = message['content'].encode("utf-8")
     response = requests.post(url, headers=headers, data=payload)
-    #response= requests.request("POST", url, headers=headers, data = payload)
     
     if response.status_code != 200:
         print("error from api")
@@ -98,6 +91,7 @@ def generate_response(user_message):
         'extra': None
     }
 
+
 def generate_forum_response(user_message):
     """
     Uses the OpenAI ChatCompletion API to generate a travel advice response.
@@ -106,7 +100,7 @@ def generate_forum_response(user_message):
     the bot should respond with: 
     "This channel is exclusively for travel tips. Please ask a travel-related question."
     """
-    
+    global CLIENT
     system_prompt = (
         "You are a knowledgeable travel assistant. Provide detailed travel advice, including attractions, tips and tricks, pros and cons of destinations, and restaurant recommendations. "
         "Respond conversationally but do not ask follow-up questions. "
@@ -122,22 +116,21 @@ def generate_forum_response(user_message):
         {"role": "user", "content": user_message}
     ]
     
-    # Fallback if no API key is set (for testing)
-    if not openai.api_key:
+
+    if not CLIENT.api_key:
         return "This is a dummy travel response, since you did not provide an OpenAI API key. Remember to always check local reviews and ask locals for the best tips."
     
     try:
-        response = openai.ChatCompletion.create(
+        response = CLIENT.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            max_tokens=200,
+            max_tokens=300,
             temperature=0.7
         )
 
         reply = response.choices[0].message.content
         return reply
     except Exception as e:
-        # Drucke den kompletten Fehler in der Konsole, damit du ihn sehen kannst
         print("Error generating travel response:", e)
         return f"Sorry, I couldn't generate a travel response at the moment. Error: {e}"
 
@@ -222,13 +215,10 @@ def send_message(channel_name):
         return "No sender", 400
     if not 'timestamp' in message:
         return "No timestamp", 400
-    
-    extra = 'bot_reply' # message.get('extra', None)
-    if 'bot_reply' in request.form:
-        extra = 'bot_reply'
-        print("bot reply :)")
 
-    # load previous messages    
+    extra = message.get('extra', 'bot_reply')
+
+    # load previous messages
     messages = read_messages(channel['file'], channel['welcome_message'])
     # filter out system messages
     messages = [m for m in messages if m['sender'] != 'System']
