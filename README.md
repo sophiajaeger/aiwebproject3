@@ -3,16 +3,18 @@
 AdventureAtlas Forum - Your AI-Powered Travel Companion
 
 ## Description
-AdventureAtlas Forum is an interactive and AI-powered distributed message channel designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely. (eventuell auch ändern wenn nur bot antwort)
+AdventureAtlas Forum is an interactive and AI-powered distributed message channel designed for travel enthusiasts. It provides topic-specific discussions, AI-assisted responses to travel-related inquiries, and an open chat mode where users can communicate freely. 
 
-Additionally, we developed an independent Java client that can connect to and interact with all available channels on the shared university server, providing a unified experience across different discussion topics
+Additionally, we developed an independent React client that can connect to and interact with all available channels on the shared university server, providing a unified experience across different discussion topics
+
+On top of that, we also designed an AdventureAtlas hub that displays all channels registered the university hub, but is designed specifically with connection to the AdventureAtlas channel.
 
 ### Features
 - Channel-based Messaging: Users can switch between different channels without reloading the page.
-- Java Client Compatibility: Developed a Java client that works with our own channel and all other channels deployed on the shared university server.
-- Login & Logout System: Authentication system integrated in the heade
+- Javascript React Client Compatibility: Developed a React client that works with our own channel and all other channels deployed on the shared university server.
+- Login & Logout System: Authentication system integrated in the header
 - AI-Powered Responses: Utilizes OpenAI API to generate travel-related replies.
-- Users can enable or disable AI-generated responses, allowing either AI-assisted replies or free chat. (eventuell raus nehmen)
+- Users can enable or disable AI-generated responses when using our client with our channel, allowing either AI-assisted replies or free chat. 
 - Inappropriate Content Filtering: Implements a filter API to remove offensive or irrelevant content.
 - Message Limitation: A maximum of 150 messages is retained to optimize performance.
 - System Messages: Displayed only until the next message is sent.
@@ -20,7 +22,7 @@ Additionally, we developed an independent Java client that can connect to and in
 ### Purpose
 The project was developed as part of the course "Artificial Intelligence and the Web" by Cognitive Science Students at the University of Osnabrück.
 
-## Instalation
+## Installation
 ### Requirements
 - Python Version: 3.9 or higher
 - Operating System: Windows, macOS, Linux
@@ -78,7 +80,7 @@ Dependencies:
 For issues or inquiries, please contact:
 Email:
 - cbehr@uni-osnabrueck.de
-- sjaeger@uni-osnabrueck.de
+- sojaeger@uni-osnabrueck.de
 - tgrell@uni-osnabrueck.de
 
 ### Report Issues
