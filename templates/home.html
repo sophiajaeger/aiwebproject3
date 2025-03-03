@@ -31,13 +31,12 @@
     <script type="text/babel">
         const HUB_AUTHKEY = 'Crr-K24d-2N';
         const HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub";
-
-        // const HUB_AUTHKEY = '1234567890'
-        // const HUB_URL = 'http://localhost:5555'
         
         function ChannelList() {
+            {/*creates states that store the channel list*/}
             const [channels, setChannels] = React.useState([]);
 
+            // fetch the channel list from the server
             React.useEffect(() => {
                fetch(HUB_URL + "/channels", {
                    headers: { Authorization: "authkey " + HUB_AUTHKEY },
@@ -49,6 +48,7 @@
 
             return (
                 <div>
+                    {/* display the channel list */}
                     <ul class="channel-list">
                         {channels.map(channel => (
                             <li key={channel.endpoint}>

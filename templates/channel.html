@@ -18,15 +18,12 @@
     <script type="text/babel">
         const HUB_AUTHKEY = 'Crr-K24d-2N'; 
         const HUB_URL = "http://vm146.rz.uni-osnabrueck.de/hub";
-
-        //const HUB_AUTHKEY = '1234567890'
-        //const HUB_URL = 'http://localhost:5555'
         
         function ChannelApp(){
             const[content, setContent] = React.useState("");
-            const [username, setUsername] = React.useState(localStorage.getItem("username") || "");
-            const [messages, setMessages] = React.useState([]);
-            const [newMessage, setNewMessage] = React.useState("");
+            const [username, setUsername] = React.useState(localStorage.getItem("username") || ""); // store the username so it does not have to be entered with every message
+            const [messages, setMessages] = React.useState([]); 
+            const [newMessage, setNewMessage] = React.useState(""); // state to store the message input by the user
             const [channels, setChannels] = React.useState([]);
 	    const [disableBotReply, setDisableBotReply] = React.useState(false);
 
@@ -101,6 +98,7 @@
         	}
         
 	        try {
+                //send the message to the channel endpoint
         	    await fetch(currentChannel.endpoint, {
                 	method: 'POST', 
 	                headers: {
@@ -109,8 +107,8 @@
 	                },
         	        body: JSON.stringify(payload)    
 	            });
-        	    setContent("");
-                    fetchMessages();
+        	    setContent(""); // clear input field after message was sent
+                    fetchMessages(); // display the newest message immediately
 		    scrollToBottom();
 	        } catch(error) {
         	    console.error("Error sending messages", error);
@@ -141,6 +139,7 @@
                         <div className="profile-tab">
                             {username ? (
                                 <div>
+                                    {/* greet the user if a username is stored */}
                                     <span>Hello {username}!</span>
                                     <img 
                                         src="{{ url_for('static', filename='images/profile-icon.png') }}" 
@@ -152,7 +151,7 @@
                             <input 
                                 type="text" 
                                 placeholder="Enter your name" 
-                                //onChange={handleUsernameChange}
+                                // handles the enter key event in the input field to save the username
                                 onKeyDown={({ key, target }) => key === 'Enter' && handleUsernameChange(target.value)}
                             />
                             )}
@@ -162,6 +161,7 @@
                     <div className="sidebar">
                         <h2>Navigation</h2>
                         <ul>
+                            {/* display the channel list */}
 				<li>
                                     <a href={HUB_URL}>Public Hub</a>
                                 </li>
@@ -183,6 +183,7 @@
                     <div class="content">
                         <h1>{currentChannel.name}</h1>
                         {console.log(currentChannel)}
+                        {/* display all messages of the channel */}
                         <div id="messages">
                             {messages.map((msg, index) => (
                                 <div key={index} className="message">
@@ -192,7 +193,7 @@
                                 </div>
                             ))}
                         </div>
-
+                        {/* input field for typing messages */}
                         <form id="message-form" onSubmit={handleSubmit} className="message-form">
                             <label htmlFor="content">Message:</label>
                             <input
@@ -204,7 +205,7 @@
                                 required
                             />
 
-			    {/* NEW: Show checkbox only if channel is AdventureAtlas */}
+			    {/* checkbox to disable bot reply only if channel is AdventureAtlas */}
 	                    {currentChannel.name === "AdventureAtlas" && (
                         	<label>
                 	            <input 
@@ -215,7 +216,8 @@
                 	            Disable the automatic bot reply
         	                </label>
 	                    )}
-        
+                        
+                        {/* Submit button to send the message */}
 	                    <input type="submit" value="Post" disabled={!username}/>
                             {!username && (
                                 <p>Please enter your name above to post a message.</p>
