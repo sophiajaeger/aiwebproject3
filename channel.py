@@ -68,17 +68,18 @@ def profanity_filter(message):
     if response.status_code != 200:
         print("error from api")
         return False
-    
+
     result = response.json()
-    if result.get("bad_words_total",0) > 0:
-        try:
-            # when testing, we realized it excluded the word beach, so we added an exception for it
-            if result.get("bad_words_list").get("word").str().lower() == 'beach': 
-                return False
-            else:
-                return True #returns true if bad word was found
-        except:
-            pass
+    if result.get("bad_words_total", 0) > 0:
+        bad_words_list = result.get("bad_words_list", [])
+        # when testing, we realized it flagged the word beach, so we added an exception for it
+        for entry in bad_words_list:
+            word = entry.get("word", "").lower()
+            if word != "beach":
+                return True  #returns true if bad word (other than 'beach') was found
+        return False  # Only "beach" was found, so don't flag it
+
+    
     return False
 
 # Function to generate responses
@@ -225,7 +226,7 @@ def send_message(channel_name):
     # check for inappropriate content 
     if profanity_filter(message):
         system_message = {
-            'content': 'Your message contained inappropriate content and was not posted.',
+            'content': f"{message['sender']}'s message contained inappropriate content and was not posted.",
             'sender': 'System',
             'timestamp': datetime.datetime.now().isoformat(" ", "seconds"),
             'extra': None
